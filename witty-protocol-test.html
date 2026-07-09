@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Witty プロトコル通信テスト</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b0d;
+      --panel: #14181c;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f7f3ea;
+      --text-dim: #9ca3af;
+      --accent: #e7bd56;
+      --ok: #4ade80;
+      --err: #ff6b6b;
+      --mono: "Consolas", "Cascadia Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0; padding: 24px;
+      background: var(--bg); color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      max-width: 1000px; margin-inline: auto;
+    }
+
+    h1 { font-size: 20px; margin: 0 0 4px; color: var(--accent); }
+    .sub { color: var(--text-dim); font-size: 13px; margin: 0 0 20px; }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 10px; padding: 16px; margin-bottom: 16px;
+    }
+    .panel h2 { font-size: 14px; margin: 0 0 10px; color: var(--accent); }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    button {
+      background: var(--accent); color: #221a08; border: none;
+      border-radius: 6px; padding: 8px 18px; font-size: 14px;
+      font-weight: 700; cursor: pointer;
+    }
+    button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 400; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #status { font-size: 13px; padding: 6px 12px; border-radius: 999px; border: 1px solid var(--line); color: var(--text-dim); }
+    #status.connected { color: var(--ok); border-color: var(--ok); }
+    #status.error { color: var(--err); border-color: var(--err); }
+
+    .result {
+      font-family: var(--mono); font-size: 14px; line-height: 1.7;
+      background: #060809; border: 1px solid var(--line);
+      border-radius: 8px; padding: 14px; margin-top: 10px; min-height: 40px;
+    }
+    .result .ok { color: var(--ok); }
+    .result .err { color: var(--err); }
+    .result .k { color: var(--text-dim); }
+
+    #log {
+      font-family: var(--mono); font-size: 12px; line-height: 1.55;
+      background: #060809; border: 1px solid var(--line); border-radius: 8px;
+      padding: 12px; height: 240px; overflow-y: auto; white-space: pre-wrap; word-break: break-all;
+    }
+    #log .t { color: var(--text-dim); }
+    #log .tx { color: var(--accent); }
+    #log .rx { color: #7dd3fc; }
+    #log .info { color: var(--text-dim); font-style: italic; }
+    #log .error { color: var(--err); }
+
+    #unsupported { display: none; color: var(--err); border: 1px solid var(--err); border-radius: 8px; padding: 12px; margin-bottom: 16px; font-size: 14px; }
+    code { font-family: var(--mono); background: #0b0e11; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; font-size: 12.5px; }
+    .hint { font-size: 12.5px; color: var(--text-dim); margin: 6px 0 0; }
+  </style>
+</head>
+
+<body>
+  <h1>Witty プロトコル通信テスト</h1>
+  <p class="sub">逆コンパイルで判明したフレーム仕様が実機で通用するかを検証するツール</p>
+
+  <div id="unsupported">
+    このブラウザは WebHID API 非対応です。Chrome または Edge で開いてください。
+  </div>
+
+  <div class="panel">
+    <h2>接続</h2>
+    <div class="row">
+      <button id="connect">Witty に接続</button>
+      <button id="disconnect" class="secondary" disabled>切断</button>
+      <span id="status">未接続</span>
+    </div>
+    <p class="hint">光電管(Gate)・タイマーどちらでも可。まずは今つながっている機器で試せます。</p>
+  </div>
+
+  <div class="panel">
+    <h2>① 機器情報の取得 &nbsp;<span style="font-weight:400;color:var(--text-dim);font-size:12px;">GET_INFO_HW_SW / 全機種共通</span></h2>
+    <div class="row">
+      <button id="btnInfo" disabled>機器情報を取得</button>
+    </div>
+    <p class="hint">これが成功すれば「フレーム構造・チェックサム・HID送受信」が全て正しいと証明できます(検証の要)。</p>
+    <div class="result" id="resInfo">—</div>
+  </div>
+
+  <div class="panel">
+    <h2>② 日時の取得 &nbsp;<span style="font-weight:400;color:var(--text-dim);font-size:12px;">GET_DATE_TIME / タイマー本体のみ</span></h2>
+    <div class="row">
+      <button id="btnDate" disabled>日時を取得</button>
+    </div>
+    <p class="hint">タイマー本体をつないでいるとき用。今の時刻が返れば読み取り成功です。</p>
+    <div class="result" id="resDate">—</div>
+  </div>
+
+  <div class="panel">
+    <h2>③ 実験: オンライン計測ストリーミング &nbsp;<span style="font-weight:400;color:var(--text-dim);font-size:12px;">SET_TEST_START → EVENT_TEST_RESULTS</span></h2>
+    <div class="row">
+      <label>テスト名
+        <input type="text" id="testName" value="" placeholder="(空欄=現在選択中のテスト)" size="24"
+          style="background:#0b0e11;color:var(--text);border:1px solid var(--line);border-radius:6px;padding:7px 10px;font-family:var(--mono);">
+      </label>
+      <button id="btnStart" disabled>オンライン計測を開始</button>
+      <span id="onlineState" style="font-size:13px;color:var(--text-dim);">未開始</span>
+    </div>
+    <p class="hint">
+      前回"WEB"はパラメータ不正で拒否されました。<strong>タイマー本体に登録済みのテスト名</strong>を正確に入れると通る可能性があります。
+      空欄のまま試すと「現在選択中のテスト」を開始できるかもしれません。
+    </p>
+    <p class="hint">
+      これが本命の実験です。開始後に<strong>光電管のビームを手でさえぎる</strong>と、
+      計測イベントがリアルタイムで下に出れば「完全リアルタイム」が実現できます。<br>
+      ※タイマーを計測待ち状態(いつも計測する画面)にしてから開始してください。
+    </p>
+    <div class="result" id="resEvents">まだイベントはありません</div>
+  </div>
+
+  <div class="panel">
+    <h2>通信ログ (生バイト)</h2>
+    <div id="log"></div>
+    <div class="row" style="margin-top:10px;">
+      <button id="clear" class="secondary">クリア</button>
+    </div>
+  </div>
+
+  <script type="module">
+    import {
+      buildFrame, buildTestStart, parseFrame, scanFrames, parseError, parseInfoHwSw, parseDateTime,
+      parseTestResultEvent, ticksToTime, logicalChannelName, BaseCmd, WittyCmd,
+    } from './witty-protocol.js';
+
+    const $ = (id) => document.getElementById(id);
+    let device = null;
+    let listening = false; // 切断後も待ち受け続けるフラグ(オンライン計測モードの再列挙対策)
+    const pending = new Map(); // command => {resolve, reject, timer}
+
+    if (!('hid' in navigator)) {
+      $('unsupported').style.display = 'block';
+      $('connect').disabled = true;
+    }
+
+    function now() {
+      const d = new Date();
+      return d.toLocaleTimeString('ja-JP', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+    }
+    function hex(bytes) {
+      return [...bytes].map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+    }
+    function log(cls, msg) {
+      const line = document.createElement('div');
+      line.innerHTML = `<span class="t">[${now()}]</span> <span class="${cls}">${msg}</span>`;
+      $('log').appendChild(line);
+      $('log').scrollTop = $('log').scrollHeight;
+    }
+    function setStatus(text, cls) { const s = $('status'); s.textContent = text; s.className = cls || ''; }
+    function setButtons(connected) {
+      $('connect').disabled = connected;
+      $('disconnect').disabled = !connected;
+      $('btnInfo').disabled = !connected;
+      $('btnDate').disabled = !connected;
+      $('btnStart').disabled = !connected;
+    }
+
+    // EVENT_TEST_RESULTS を捕捉して表示。カウンタ==1で新しい「走」の開始とみなしグループ化。
+    const events = [];
+    let currentRun = [];
+    function showEvent(frame) {
+      const pl = frame.payload;
+      const ev = parseTestResultEvent(pl);
+      events.push(ev);
+      const box = $('resEvents');
+      if (box.dataset.empty !== 'no') { box.innerHTML = ''; box.dataset.empty = 'no'; }
+      const line = document.createElement('div');
+      if (ev) {
+        if (ev.counter <= 1) currentRun = []; // 新しい走の開始
+        currentRun.push(ev);
+        const first = currentRun[0];
+        const prev = currentRun.length >= 2 ? currentRun[currentRun.length - 2] : null;
+        const elapsed = ev.seconds - first.seconds;       // 1回目からの経過(走行タイム候補)
+        const split = prev ? (ev.seconds - prev.seconds) : 0; // 直前からの差(ラップ)
+        line.innerHTML = `<span class="ok">横切り#${ev.counter}</span> ` +
+          `<b style="color:var(--accent)">1回目から ${elapsed.toFixed(3)}秒</b> ` +
+          `<span class="k">ラップ ${split.toFixed(3)}秒 / 生tick=${ev.tick} / raw=${hex(pl)}</span>`;
+      } else {
+        line.innerHTML = `<span class="ok">イベント#${events.length}</span> <span class="err">解読不可</span> raw=${hex(pl)}`;
+      }
+      box.appendChild(line);
+    }
+
+    let ffCount = 0;
+    function handleFrame(frame, rawTail) {
+      log('rx', `←受信 cmd=0x${frame.command.toString(16).toUpperCase().padStart(4, '0')} type=${frame.isResponse ? 'RESP' : 'REQ'} payload(${frame.payload.length}B)=${hex(frame.payload)}`);
+
+      // エラー応答 (command==1)
+      if (frame.command === BaseCmd.ERROR) {
+        const err = parseError(frame.payload);
+        if (err && pending.has(err.failedCommand)) {
+          const p = pending.get(err.failedCommand);
+          clearTimeout(p.timer); pending.delete(err.failedCommand);
+          p.reject(new Error(`機器がエラー応答: failedCmd=0x${err.failedCommand.toString(16)} code=${err.errorCode}`));
+        }
+        return;
+      }
+      // SET_TEST_START の成功ACK
+      if (frame.command === WittyCmd.SET_TEST_START && frame.isResponse) {
+        $('onlineState').innerHTML = '<span style="color:var(--ok)">✓ オンライン計測 開始受理! ビームをさえぎってください…</span>';
+        log('info', '★ SET_TEST_START 成功ACK受信 — オンライン計測モードに入りました');
+      }
+      // オンライン計測イベント
+      if (frame.command === WittyCmd.EVENT_TEST_RESULTS) {
+        showEvent(frame);
+      }
+      if (pending.has(frame.command)) {
+        const p = pending.get(frame.command);
+        clearTimeout(p.timer); pending.delete(frame.command);
+        p.resolve(frame);
+      }
+    }
+
+    function onInputReport(e) {
+      const data = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+      // 全FF(アイドル)は集計だけして無視
+      if (data.every(b => b === 0xff)) {
+        ffCount++;
+        if (ffCount % 200 === 0) log('info', `アイドル(全FF)受信中: 計${ffCount}件 — ストリームは生きています`);
+        return;
+      }
+      // 末尾の連続する0埋めを除いた実データ長を求めて全バイト記録(解析用)
+      let last = data.length - 1;
+      while (last > 0 && data[last] === 0x00) last--;
+      const meaningful = data.slice(0, last + 1);
+      log('rx', `←RAW(${meaningful.length}/${data.length}B) ${hex(meaningful)}`);
+
+      const frames = scanFrames(data);
+      if (frames.length === 0) {
+        log('error', '↑フレーム未検出(既知の枠組みでない生データ)。上のRAWを解析します');
+        return;
+      }
+      for (const f of frames) handleFrame(f);
+      // フレーム後ろに残る非0データ(イベント本体の可能性)を明示
+      const lastFrame = frames[frames.length - 1];
+      const tailStart = lastFrame.offset + lastFrame.length;
+      const tail = meaningful.slice(tailStart);
+      if (tail.length > 0 && tail.some(b => b !== 0x00)) {
+        log('rx', `　└ フレーム後続データ(${tail.length}B, 要解析): ${hex(tail)}`);
+      }
+    }
+
+    // コマンド送信して同一コマンドの応答を待つ
+    function sendAndWait(command, payload, timeoutMs = 800) {
+      return new Promise((resolve, reject) => {
+        if (!device) { reject(new Error('未接続')); return; }
+        if (pending.has(command)) { reject(new Error('同一コマンドが処理中')); return; }
+        const frame = buildFrame(command, payload);
+        const timer = setTimeout(() => {
+          pending.delete(command);
+          reject(new Error('タイムアウト(応答なし)'));
+        }, timeoutMs);
+        pending.set(command, { resolve, reject, timer });
+        device.sendReport(0, frame)
+          .then(() => log('tx', `→送信 cmd=0x${command.toString(16).toUpperCase().padStart(4, '0')} ${hex(frame.slice(0, frame[1]))}`))
+          .catch((err) => {
+            clearTimeout(timer); pending.delete(command);
+            reject(new Error('送信失敗: ' + err.message));
+          });
+      });
+    }
+
+    async function attachDevice(dev) {
+      device = dev;
+      if (!device.opened) await device.open();
+      device.removeEventListener('inputreport', onInputReport); // 二重登録防止
+      device.addEventListener('inputreport', onInputReport);
+      setStatus('接続中: ' + (device.productName || '(名称なし)'), 'connected');
+      setButtons(true);
+      log('info', `接続: ${device.productName || '(名称なし)'} VID=0x${device.vendorId.toString(16)} PID=0x${device.productId.toString(16)}`);
+    }
+
+    $('connect').addEventListener('click', async () => {
+      try {
+        const devs = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x16d0 }] });
+        if (!devs.length) return;
+        listening = true;
+        await attachDevice(devs[0]);
+      } catch (e) {
+        setStatus('接続失敗', 'error');
+        log('error', '接続エラー: ' + e.message);
+        device = null;
+      }
+    });
+
+    $('disconnect').addEventListener('click', async () => {
+      listening = false; // 手動切断は待ち受けも止める
+      try {
+        if (device) { device.removeEventListener('inputreport', onInputReport); await device.close(); }
+      } catch (e) { log('error', '切断時エラー: ' + e.message); }
+      device = null;
+      setStatus('未接続'); setButtons(false);
+      log('info', '切断しました(待ち受け停止)');
+    });
+
+    // 切断: オンライン計測モードでは機器がUSBを再列挙するため、待ち受け中は諦めない
+    navigator.hid && navigator.hid.addEventListener('disconnect', (e) => {
+      if (device && e.device === device) {
+        device = null;
+        if (listening) {
+          setStatus('再接続待ち… (機器がモード切替で再列挙中の可能性)', 'error');
+          log('error', 'デバイス切断 — 待ち受け継続中。戻ってきたら自動再接続します');
+        } else {
+          setStatus('未接続'); setButtons(false);
+          log('error', 'デバイスが取り外されました');
+        }
+      }
+    });
+
+    // 再接続: 待ち受け中にMicrogate機器が現れたら自動で開く
+    navigator.hid && navigator.hid.addEventListener('connect', async (e) => {
+      if (!listening || device) return;
+      if (e.device.vendorId !== 0x16d0) return;
+      log('info', `機器が再出現: ${e.device.productName || '(名称なし)'} PID=0x${e.device.productId.toString(16)} — 自動再接続します`);
+      try { await attachDevice(e.device); }
+      catch (err) { log('error', '自動再接続失敗: ' + err.message + ' (手動で「接続」を押してください)'); }
+    });
+
+    $('btnInfo').addEventListener('click', async () => {
+      const box = $('resInfo');
+      box.innerHTML = '<span class="k">問い合わせ中…</span>';
+      try {
+        const frame = await sendAndWait(BaseCmd.GET_INFO_HW_SW);
+        const info = parseInfoHwSw(frame.payload);
+        if (!info) { box.innerHTML = '<span class="err">応答を解釈できませんでした</span>'; return; }
+        box.innerHTML =
+          `<span class="ok">✓ 通信成功 — フレーム構造は正しい</span><br>` +
+          `<span class="k">回路コード:</span> ${info.circuitCode}<br>` +
+          `<span class="k">シリアル番号:</span> ${info.serialNo}<br>` +
+          `<span class="k">ブートFW:</span> ${info.bootVersion} &nbsp; <span class="k">アプリFW:</span> ${info.appVersion}`;
+      } catch (e) {
+        box.innerHTML = `<span class="err">✗ ${e.message}</span>`;
+      }
+    });
+
+    $('btnDate').addEventListener('click', async () => {
+      const box = $('resDate');
+      box.innerHTML = '<span class="k">問い合わせ中…</span>';
+      try {
+        const frame = await sendAndWait(WittyCmd.GET_DATE_TIME);
+        const dt = parseDateTime(frame.payload);
+        if (!dt) { box.innerHTML = '<span class="err">応答を解釈できませんでした</span>'; return; }
+        const p2 = (n) => String(n).padStart(2, '0');
+        box.innerHTML =
+          `<span class="ok">✓ 機器の日時を取得</span><br>` +
+          `<span class="k">日時:</span> ${dt.year}-${p2(dt.month)}-${p2(dt.day)} ${p2(dt.hour)}:${p2(dt.minute)}:${p2(dt.second)}`;
+      } catch (e) {
+        box.innerHTML = `<span class="err">✗ ${e.message}</span><br><span class="k">(タイマー本体でないと応答しません)</span>`;
+      }
+    });
+
+    $('btnStart').addEventListener('click', async () => {
+      const st = $('onlineState');
+      try {
+        const name = $('testName').value;
+        const frame = buildTestStart(name);
+        // SET_TEST_START の応答有無は機種次第。まず送信し、応答が来れば表示、来なくても継続。
+        try {
+          const resp = await sendAndWait(WittyCmd.SET_TEST_START, frame.slice(4, frame[1] - 1), 800);
+          st.innerHTML = '<span style="color:var(--ok)">開始コマンド受理。ビームをさえぎってください…</span>';
+        } catch (e) {
+          // 応答なしでもイベントが流れる可能性があるので継続
+          st.innerHTML = `<span style="color:var(--accent)">開始コマンド送信済(応答: ${e.message})。ビームをさえぎってイベントが出るか観察してください…</span>`;
+        }
+      } catch (e) {
+        st.innerHTML = `<span style="color:var(--err)">送信失敗: ${e.message}</span>`;
+      }
+    });
+
+    $('clear').addEventListener('click', () => { $('log').innerHTML = ''; });
+  </script>
+</body>
+
+</html>
