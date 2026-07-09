@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Witty HIDモニター</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b0d;
+      --panel: #14181c;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f7f3ea;
+      --text-dim: #9ca3af;
+      --accent: #e7bd56;
+      --ok: #4ade80;
+      --err: #ff6b6b;
+      --mono: "Consolas", "Cascadia Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      padding: 24px;
+      background: var(--bg);
+      color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      max-width: 1000px;
+      margin-inline: auto;
+    }
+
+    h1 {
+      font-size: 20px;
+      margin: 0 0 4px;
+      color: var(--accent);
+    }
+
+    .sub { color: var(--text-dim); font-size: 13px; margin: 0 0 20px; }
+
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 16px;
+      margin-bottom: 16px;
+    }
+
+    .panel h2 { font-size: 14px; margin: 0 0 10px; color: var(--accent); }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    label { font-size: 13px; color: var(--text-dim); }
+
+    input[type="text"] {
+      background: #0b0e11;
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 7px 10px;
+      font-size: 14px;
+      font-family: var(--mono);
+    }
+
+    button {
+      background: var(--accent);
+      color: #221a08;
+      border: none;
+      border-radius: 6px;
+      padding: 8px 18px;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-weight: 400;
+    }
+
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    #status {
+      font-size: 13px;
+      padding: 6px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--text-dim);
+    }
+
+    #status.connected { color: var(--ok); border-color: var(--ok); }
+    #status.error { color: var(--err); border-color: var(--err); }
+
+    #log {
+      font-family: var(--mono);
+      font-size: 12.5px;
+      line-height: 1.6;
+      background: #060809;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 12px;
+      height: 340px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      word-break: break-all;
+    }
+
+    #log .t { color: var(--text-dim); }
+    #log .hex { color: var(--accent); }
+    #log .ascii { color: #7dd3fc; }
+    #log .info { color: var(--text-dim); font-style: italic; }
+    #log .meta { color: #a78bfa; }
+    #log .error { color: var(--err); }
+
+    .stats { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+
+    ol { font-size: 14px; line-height: 1.9; padding-left: 22px; margin: 0; }
+
+    code {
+      font-family: var(--mono);
+      background: #0b0e11;
+      border: 1px solid var(--line);
+      border-radius: 4px;
+      padding: 1px 6px;
+      font-size: 12.5px;
+    }
+
+    #unsupported {
+      display: none;
+      color: var(--err);
+      border: 1px solid var(--err);
+      border-radius: 8px;
+      padding: 12px;
+      margin-bottom: 16px;
+      font-size: 14px;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>Witty HIDモニター</h1>
+  <p class="sub">Microgate Witty 系デバイス (VID 0x16D0, HIDデバイス) が送ってくるレポートを観察する診断ツール</p>
+
+  <div id="unsupported">
+    このブラウザは WebHID API に対応していません。Chrome または Edge で
+    <code>http://localhost:5173/witty-hid-monitor.html</code> を開いてください。
+  </div>
+
+  <div class="panel">
+    <h2>使い方</h2>
+    <ol>
+      <li><strong>Witty Manager を完全に終了する</strong>(デバイスを取り合うため)</li>
+      <li>Witty Timer を USB 接続して電源を入れ、「Witty に接続」を押す(一覧に Witty が出るので選択)</li>
+      <li>接続直後に出る<strong>「デバイス構成」のログ</strong>(レポートID・サイズの一覧)がまず重要な情報です</li>
+      <li>接続したまま Witty で計測を実行し、<strong>スタート/ゴールの瞬間に受信レポートが流れるか</strong>を観察する</li>
+      <li>結果に関わらず「ログを保存」で記録して共有してください</li>
+    </ol>
+  </div>
+
+  <div class="panel">
+    <h2>接続</h2>
+    <div class="row">
+      <button id="connect">Witty に接続</button>
+      <button id="connectAny" class="secondary">(Wittyが一覧に出ない場合) 全HIDから選ぶ</button>
+      <button id="disconnect" class="secondary" disabled>切断</button>
+      <span id="status">未接続</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>受信ログ(HEX + ASCII、時刻はミリ秒精度)</h2>
+    <div id="log"></div>
+    <div class="stats">
+      受信レポート数: <span id="reportcount">0</span>
+      (うちアイドル [全FF]: <span id="idlecount">0</span> 件は非表示)
+      <label style="margin-left: 12px;"><input type="checkbox" id="showidle"> アイドルも表示する</label>
+    </div>
+    <div class="row" style="margin-top: 10px;">
+      <button id="save" class="secondary">ログを保存</button>
+      <button id="clear" class="secondary">ログをクリア</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>プローブ送信(任意・上級者向け)</h2>
+    <div class="row">
+      <label>レポートID <input type="text" id="reportid" value="0" size="4"></label>
+      <input type="text" id="txhex" placeholder="送信データ HEX 例: 01 00 00" size="30">
+      <button id="sendOutput" class="secondary" disabled>Output送信</button>
+      <button id="getFeature" class="secondary" disabled>Feature取得</button>
+    </div>
+    <p class="sub" style="margin: 8px 0 0;">
+      Wittyが「聞かれたら答える」型かを探るためのもの。まずは受信のみで観察し、必要になったら使ってください。
+    </p>
+  </div>
+
+  <script>
+    (() => {
+      const $ = (id) => document.getElementById(id);
+      const logEl = $('log');
+      const WITTY_VID = 0x16D0;
+      let device = null;
+      let reportCount = 0;
+      const logLines = [];
+
+      if (!('hid' in navigator)) {
+        $('unsupported').style.display = 'block';
+        $('connect').disabled = true;
+        $('connectAny').disabled = true;
+      }
+
+      function now() {
+        const d = new Date();
+        return d.toLocaleTimeString('ja-JP', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+      }
+
+      function addLog(html, plain) {
+        const line = document.createElement('div');
+        line.innerHTML = html;
+        logEl.appendChild(line);
+        logEl.scrollTop = logEl.scrollHeight;
+        logLines.push(plain);
+      }
+
+      function esc(s) {
+        return String(s).replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+      }
+
+      function logInfo(msg) {
+        addLog(`<span class="t">[${now()}]</span> <span class="info">${esc(msg)}</span>`, `[${now()}] # ${msg}`);
+      }
+
+      function logMeta(msg) {
+        addLog(`<span class="t">[${now()}]</span> <span class="meta">${esc(msg)}</span>`, `[${now()}] * ${msg}`);
+      }
+
+      function logError(msg) {
+        addLog(`<span class="t">[${now()}]</span> <span class="error">${esc(msg)}</span>`, `[${now()}] ! ${msg}`);
+      }
+
+      function logData(reportId, bytes, dir) {
+        const hex = [...bytes].map(b => b.toString(16).padStart(2, '0').toUpperCase()).join(' ');
+        const ascii = [...bytes].map(b => (b >= 0x20 && b <= 0x7e) ? String.fromCharCode(b) : '.').join('');
+        const label = dir === 'tx' ? '→送信' : (dir === 'feat' ? '←Feature' : '←受信');
+        addLog(
+          `<span class="t">[${now()}] ${label} ID=${reportId} (${bytes.length}B)</span> <span class="hex">${hex}</span> <span class="ascii">|${ascii}|</span>`,
+          `[${now()}] ${label} ID=${reportId} (${bytes.length}B) ${hex} |${ascii}|`
+        );
+      }
+
+      function setStatus(text, cls) {
+        const s = $('status');
+        s.textContent = text;
+        s.className = cls || '';
+      }
+
+      let idleCount = 0;
+      let inIdleRun = false;
+
+      function onInputReport(e) {
+        reportCount++;
+        $('reportcount').textContent = reportCount;
+        const bytes = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+        const isIdle = bytes.every(b => b === 0xFF);
+        if (isIdle && !$('showidle').checked) {
+          idleCount++;
+          $('idlecount').textContent = idleCount;
+          inIdleRun = true;
+          if (idleCount % 300 === 0) {
+            logMeta(`アイドル(全FF)継続中: 計 ${idleCount} 件 / 総受信 ${reportCount} 件`);
+          }
+          return;
+        }
+        if (!isIdle && inIdleRun) {
+          logMeta(`--- アイドル(全FF)を ${idleCount} 件スキップ後、変化を検出 ---`);
+          inIdleRun = false;
+        }
+        logData(e.reportId, bytes, 'rx');
+      }
+
+      function describeReports(kind, reports) {
+        return reports.map(r => {
+          const bits = r.items.reduce((sum, it) => sum + (it.reportSize || 0) * (it.reportCount || 0), 0);
+          return `ID=${r.reportId} (${Math.ceil(bits / 8)}B)`;
+        }).join(', ') || 'なし';
+      }
+
+      async function openDevice(dev) {
+        device = dev;
+        await device.open();
+        device.addEventListener('inputreport', onInputReport);
+        setStatus('接続中', 'connected');
+        $('connect').disabled = true;
+        $('connectAny').disabled = true;
+        $('disconnect').disabled = false;
+        $('sendOutput').disabled = false;
+        $('getFeature').disabled = false;
+        logInfo(`接続: ${device.productName || '(名称なし)'} VID=0x${device.vendorId.toString(16).padStart(4, '0')} PID=0x${device.productId.toString(16).padStart(4, '0')}`);
+        logMeta('--- デバイス構成(プロトコル解析の重要情報) ---');
+        device.collections.forEach((c, i) => {
+          logMeta(`コレクション${i}: usagePage=0x${c.usagePage.toString(16).toUpperCase()} usage=0x${c.usage.toString(16).toUpperCase()}`);
+          logMeta(`  Input レポート: ${describeReports('in', c.inputReports)}`);
+          logMeta(`  Output レポート: ${describeReports('out', c.outputReports)}`);
+          logMeta(`  Feature レポート: ${describeReports('feat', c.featureReports)}`);
+        });
+        logMeta('--- 観察開始。Wittyで計測を実行してください ---');
+      }
+
+      async function connect(filters) {
+        try {
+          const devices = await navigator.hid.requestDevice({ filters });
+          if (!devices.length) return;
+          await openDevice(devices[0]);
+        } catch (e) {
+          setStatus('接続失敗', 'error');
+          logError('接続エラー: ' + e.message);
+          device = null;
+        }
+      }
+
+      $('connect').addEventListener('click', () =>
+        connect([{ vendorId: WITTY_VID }]));
+
+      $('connectAny').addEventListener('click', () => connect([]));
+
+      $('disconnect').addEventListener('click', async () => {
+        try {
+          if (device) {
+            device.removeEventListener('inputreport', onInputReport);
+            await device.close();
+          }
+        } catch (e) {
+          logError('切断時エラー: ' + e.message);
+        }
+        device = null;
+        setStatus('未接続');
+        $('connect').disabled = false;
+        $('connectAny').disabled = false;
+        $('disconnect').disabled = true;
+        $('sendOutput').disabled = true;
+        $('getFeature').disabled = true;
+        logInfo('切断しました');
+      });
+
+      navigator.hid && navigator.hid.addEventListener('disconnect', (e) => {
+        if (device && e.device === device) {
+          logError('デバイスが取り外されました');
+          $('disconnect').click();
+        }
+      });
+
+      function parseHex(raw) {
+        if (!raw.trim()) return new Uint8Array(0);
+        const parts = raw.trim().split(/[\s,]+/);
+        const bytes = [];
+        for (const p of parts) {
+          if (!/^[0-9a-fA-F]{1,2}$/.test(p)) {
+            logError(`HEX として解釈できません: "${p}"(例: 01 00 00)`);
+            return null;
+          }
+          bytes.push(parseInt(p, 16));
+        }
+        return new Uint8Array(bytes);
+      }
+
+      $('sendOutput').addEventListener('click', async () => {
+        if (!device) return;
+        const reportId = parseInt($('reportid').value, 10);
+        if (Number.isNaN(reportId) || reportId < 0 || reportId > 255) {
+          logError('レポートIDは 0〜255 の数値で指定してください');
+          return;
+        }
+        const data = parseHex($('txhex').value);
+        if (data === null) return;
+        try {
+          await device.sendReport(reportId, data);
+          logData(reportId, data, 'tx');
+        } catch (e) {
+          logError('送信エラー: ' + e.message);
+        }
+      });
+
+      $('getFeature').addEventListener('click', async () => {
+        if (!device) return;
+        const reportId = parseInt($('reportid').value, 10);
+        if (Number.isNaN(reportId) || reportId < 0 || reportId > 255) {
+          logError('レポートIDは 0〜255 の数値で指定してください');
+          return;
+        }
+        try {
+          const dv = await device.receiveFeatureReport(reportId);
+          logData(reportId, new Uint8Array(dv.buffer, dv.byteOffset, dv.byteLength), 'feat');
+        } catch (e) {
+          logError('Feature取得エラー: ' + e.message);
+        }
+      });
+
+      $('clear').addEventListener('click', () => {
+        logEl.innerHTML = '';
+        logLines.length = 0;
+        reportCount = 0;
+        $('reportcount').textContent = '0';
+      });
+
+      $('save').addEventListener('click', () => {
+        const summary = `[${now()}] * === 保存時サマリー: 総受信 ${reportCount} 件 / うちアイドル(全FF) ${idleCount} 件 ===`;
+        const blob = new Blob([logLines.concat(summary).join('\n') + '\n'], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        const d = new Date();
+        a.download = `witty-hid-log_${d.getFullYear()}${String(d.getMonth() + 1).padStart(2, '0')}${String(d.getDate()).padStart(2, '0')}_${String(d.getHours()).padStart(2, '0')}${String(d.getMinutes()).padStart(2, '0')}.txt`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+      });
+    })();
+  </script>
+</body>
+
+</html>

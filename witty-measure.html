@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Witty 計測 → ランキング登録</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #090b0d;
+      --panel: #14181c;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f7f3ea;
+      --dim: #9ca3af;
+      --accent: #e7bd56;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --err: #ff6b6b;
+      --mono: "Consolas", "Cascadia Mono", monospace;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0; padding: 20px;
+      background: var(--bg); color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      max-width: 900px; margin-inline: auto;
+    }
+
+    h1 { font-size: 20px; margin: 0 0 4px; color: var(--accent); }
+    .sub { color: var(--dim); font-size: 13px; margin: 0 0 18px; }
+
+    .panel {
+      background: var(--panel); border: 1px solid var(--line);
+      border-radius: 12px; padding: 18px; margin-bottom: 16px;
+    }
+    .panel h2 { font-size: 13px; margin: 0 0 12px; color: var(--accent); text-transform: uppercase; letter-spacing: .04em; }
+
+    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+
+    button {
+      background: var(--accent); color: #221a08; border: none;
+      border-radius: 8px; padding: 11px 20px; font-size: 15px;
+      font-weight: 700; cursor: pointer;
+    }
+    button.secondary { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
+    button.big { padding: 14px 26px; font-size: 17px; }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+
+    input[type="text"] {
+      background: #0b0e11; color: var(--text); border: 1px solid var(--line);
+      border-radius: 8px; padding: 11px 12px; font-size: 15px;
+    }
+
+    .state {
+      font-size: 14px; padding: 8px 14px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--dim);
+    }
+    .state.online { color: var(--ok); border-color: var(--ok); }
+    .state.arming { color: var(--warn); border-color: var(--warn); }
+    .state.err { color: var(--err); border-color: var(--err); }
+
+    /* 公式タイムの大表示 */
+    .result-box { text-align: center; padding: 10px 0 4px; }
+    .result-label { font-size: 13px; color: var(--dim); }
+    .result-time {
+      font-family: var(--mono); font-size: 68px; font-weight: 800; line-height: 1.1;
+      color: var(--accent); letter-spacing: .01em;
+    }
+    .result-time .unit { font-size: 28px; color: var(--dim); font-weight: 600; margin-left: 6px; }
+    .result-none { color: var(--dim); font-size: 22px; font-family: var(--mono); }
+
+    table.cross { width: 100%; border-collapse: collapse; font-family: var(--mono); font-size: 14px; margin-top: 6px; }
+    table.cross th, table.cross td { text-align: right; padding: 5px 10px; border-bottom: 1px solid var(--line); }
+    table.cross th { color: var(--dim); font-weight: 500; font-size: 12px; }
+    table.cross td.hl { color: var(--accent); }
+
+    .register-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+    .register-row input[type="text"] { flex: 1 1 220px; }
+
+    .recent { list-style: none; padding: 0; margin: 8px 0 0; font-size: 14px; }
+    .recent li { display: flex; justify-content: space-between; padding: 6px 4px; border-bottom: 1px solid var(--line); }
+    .recent .t { font-family: var(--mono); color: var(--accent); }
+
+    #log {
+      font-family: var(--mono); font-size: 11.5px; line-height: 1.5;
+      background: #060809; border: 1px solid var(--line); border-radius: 8px;
+      padding: 10px; height: 130px; overflow-y: auto; white-space: pre-wrap; word-break: break-all; color: var(--dim);
+    }
+    .hint { font-size: 12.5px; color: var(--dim); margin: 8px 0 0; }
+    a { color: var(--accent); }
+    #unsupported { display: none; color: var(--err); border: 1px solid var(--err); border-radius: 8px; padding: 12px; margin-bottom: 16px; }
+    code { font-family: var(--mono); background: #0b0e11; border: 1px solid var(--line); border-radius: 4px; padding: 1px 6px; }
+  </style>
+</head>
+
+<body>
+  <h1>Witty 計測 → ランキング登録</h1>
+  <p class="sub">光電管の計測タイムをリアルタイムに受け取り、栃商杯ランキング表に登録します</p>
+
+  <div id="unsupported">このブラウザは WebHID 非対応です。Chrome か Edge で開いてください。</div>
+
+  <div class="panel">
+    <h2>1. 接続と計測開始</h2>
+    <div class="row">
+      <label style="color:var(--dim);font-size:13px;">テスト名
+        <input type="text" id="testName" value="Proagility2" size="16">
+      </label>
+      <button id="connect">Witty 接続</button>
+      <button id="arm" disabled>計測を開始</button>
+      <button id="disconnect" class="secondary" disabled>切断</button>
+      <span id="state" class="state">未接続</span>
+    </div>
+    <p class="hint">
+      「計測を開始」を押すとタイマーが一度再起動することがあります(自動で再接続・再開始します)。
+      緑の「計測中」になれば準備完了です。テスト名はタイマーに登録済みの名称を正確に。
+    </p>
+  </div>
+
+  <div class="panel">
+    <h2>2. 現在の計測</h2>
+    <div class="result-box">
+      <div class="result-label">公式タイム(最初→最後の横切り)</div>
+      <div id="resultTime"><span class="result-none">— 待機中 —</span></div>
+    </div>
+    <table class="cross">
+      <thead><tr><th>横切り</th><th>1回目からの経過</th><th>ラップ</th></tr></thead>
+      <tbody id="crossBody"><tr><td colspan="3" style="text-align:center;color:var(--dim)">まだ横切りがありません</td></tr></tbody>
+    </table>
+    <div class="row" style="margin-top:12px;">
+      <button id="nextAthlete" class="secondary">次の選手へ(表示クリア)</button>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>3. ランキングに登録</h2>
+    <div class="register-row">
+      <input type="text" id="nameInput" placeholder="選手名 / ゼッケン番号">
+      <input type="text" id="scoreInput" placeholder="タイム(秒)" size="10" style="flex:0 0 120px;">
+      <button id="register" class="big" disabled>ランキングに登録</button>
+    </div>
+    <p class="hint">
+      計測が終わると「タイム」欄に公式タイムが自動で入ります。手直しも可能です。名前を入れて登録してください。
+      登録後は <a id="rankLink" href="index.html" target="_blank">ランキング表</a> を再読み込みすると反映されます。
+    </p>
+    <ul class="recent" id="recent"></ul>
+  </div>
+
+  <div class="panel">
+    <h2>通信ログ</h2>
+    <div id="log"></div>
+  </div>
+
+  <script type="module">
+    import {
+      buildTestStart, scanFrames, parseError, parseTestResultEvent, BaseCmd, WittyCmd,
+    } from './witty-protocol.js';
+
+    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 index.html と共有
+    const $ = (id) => document.getElementById(id);
+
+    if (!('hid' in navigator)) { $('unsupported').style.display = 'block'; $('connect').disabled = true; }
+
+    let device = null;
+    let mode = 'disconnected'; // disconnected | idle | arming | online
+    let wantArm = false;       // 再列挙をまたいで「開始したい」意思を保持
+    let armAttempts = 0;
+    const MAX_ARM_ATTEMPTS = 5;
+    let currentRun = [];       // 現在の走の横切り(counter==1でリセット)
+
+    function now() {
+      const d = new Date();
+      return d.toLocaleTimeString('ja-JP', { hour12: false }) + '.' + String(d.getMilliseconds()).padStart(3, '0');
+    }
+    function log(msg) {
+      const line = document.createElement('div');
+      line.textContent = `[${now()}] ${msg}`;
+      $('log').appendChild(line); $('log').scrollTop = $('log').scrollHeight;
+    }
+    function hex(b) { return [...b].map(x => x.toString(16).padStart(2, '0').toUpperCase()).join(' '); }
+
+    function setState(text, cls) { const s = $('state'); s.textContent = text; s.className = 'state' + (cls ? ' ' + cls : ''); }
+    function setMode(m) {
+      mode = m;
+      $('connect').disabled = (m !== 'disconnected');
+      $('disconnect').disabled = (m === 'disconnected');
+      $('arm').disabled = (m === 'disconnected' || m === 'arming');
+      if (m === 'online') setState('計測中 — 横切りを待機', 'online');
+      else if (m === 'arming') setState('計測開始中… (再起動待ちの場合あり)', 'arming');
+      else if (m === 'idle') setState('接続済み(未開始)');
+      else setState('未接続');
+    }
+
+    // --- HID 受信処理 ---
+    function onInputReport(e) {
+      const data = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+      if (data.every(b => b === 0xff)) return; // アイドル
+      const frames = scanFrames(data);
+      for (const f of frames) handleFrame(f);
+    }
+
+    function handleFrame(f) {
+      // エラー応答
+      if (f.command === BaseCmd.ERROR) {
+        const err = parseError(f.payload);
+        if (err && err.failedCommand === WittyCmd.SET_TEST_START) {
+          wantArm = false;
+          setState('開始失敗: テスト名が不正かも(code ' + (err ? err.errorCode : '?') + ')', 'err');
+          log('SET_TEST_START エラー: テスト名を確認してください');
+          setMode('idle');
+        }
+        return;
+      }
+      // 開始成功ACK
+      if (f.command === WittyCmd.SET_TEST_START && f.isResponse) {
+        wantArm = false; armAttempts = 0;
+        setMode('online');
+        log('★ 計測開始 受理(オンライン計測モード)');
+        return;
+      }
+      // 計測イベント(横切り)
+      if (f.command === WittyCmd.EVENT_TEST_RESULTS) {
+        const ev = parseTestResultEvent(f.payload);
+        if (ev) onCrossing(ev);
+      }
+    }
+
+    // --- 横切り処理 ---
+    function onCrossing(ev) {
+      if (ev.counter <= 1) currentRun = [];  // 新しい走
+      currentRun.push(ev);
+      renderCrossings();
+      log(`横切り#${ev.counter} tick=${ev.tick}`);
+    }
+
+    function renderCrossings() {
+      const body = $('crossBody');
+      if (currentRun.length === 0) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--dim)">まだ横切りがありません</td></tr>';
+        setResult(null);
+        return;
+      }
+      const first = currentRun[0];
+      body.innerHTML = '';
+      currentRun.forEach((ev, i) => {
+        const elapsed = ev.seconds - first.seconds;
+        const lap = i === 0 ? 0 : ev.seconds - currentRun[i - 1].seconds;
+        const tr = document.createElement('tr');
+        tr.innerHTML = `<td>#${ev.counter}</td><td class="hl">${elapsed.toFixed(2)} 秒</td><td>${i === 0 ? '—' : lap.toFixed(2) + ' 秒'}</td>`;
+        body.appendChild(tr);
+      });
+      // 公式タイム = 最初→最後の差
+      const last = currentRun[currentRun.length - 1];
+      const official = last.seconds - first.seconds;
+      setResult(currentRun.length >= 2 ? official : null);
+    }
+
+    function setResult(seconds) {
+      const box = $('resultTime');
+      if (seconds == null) {
+        box.innerHTML = '<span class="result-none">— 計測中 —</span>';
+        $('scoreInput').value = '';
+        $('register').disabled = true;
+        return;
+      }
+      box.innerHTML = `${seconds.toFixed(2)}<span class="unit">秒</span>`;
+      $('scoreInput').value = seconds.toFixed(2);
+      $('register').disabled = false;
+    }
+
+    // --- 接続・開始の自動化 ---
+    async function attachDevice(dev) {
+      device = dev;
+      if (!device.opened) await device.open();
+      device.removeEventListener('inputreport', onInputReport);
+      device.addEventListener('inputreport', onInputReport);
+      log(`接続: ${device.productName || '(名称なし)'} PID=0x${device.productId.toString(16)}`);
+    }
+
+    async function sendStart() {
+      if (!device) return;
+      try {
+        const frame = buildTestStart($('testName').value);
+        await device.sendReport(0, frame);
+        log(`→ 計測開始コマンド送信 (試行${armAttempts})`);
+      } catch (e) {
+        log('送信失敗: ' + e.message + '(再列挙中かもしれません)');
+      }
+    }
+
+    $('connect').addEventListener('click', async () => {
+      try {
+        const devs = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x16d0 }] });
+        if (!devs.length) return;
+        await attachDevice(devs[0]);
+        setMode('idle');
+      } catch (e) { log('接続エラー: ' + e.message); setState('接続失敗', 'err'); }
+    });
+
+    $('arm').addEventListener('click', async () => {
+      if (!device) return;
+      wantArm = true; armAttempts = 1;
+      setMode('arming');
+      await sendStart();
+    });
+
+    $('disconnect').addEventListener('click', async () => {
+      wantArm = false;
+      try { if (device) { device.removeEventListener('inputreport', onInputReport); await device.close(); } } catch (_) {}
+      device = null; setMode('disconnected'); log('切断しました');
+    });
+
+    // 再列挙対応: 切断されても開始意思があれば待ち受け
+    navigator.hid && navigator.hid.addEventListener('disconnect', (e) => {
+      if (device && e.device === device) {
+        device = null;
+        if (wantArm || mode === 'online') {
+          setState('再接続待ち… (タイマー再列挙中)', 'arming');
+          log('切断 — 再接続を待機します');
+        } else { setMode('disconnected'); }
+      }
+    });
+
+    navigator.hid && navigator.hid.addEventListener('connect', async (e) => {
+      if (device || e.device.vendorId !== 0x16d0) return;
+      if (!wantArm && mode !== 'online') return;
+      log('タイマー再出現 — 自動再接続します');
+      try {
+        await attachDevice(e.device);
+        if (wantArm && armAttempts < MAX_ARM_ATTEMPTS) {
+          armAttempts++;
+          setMode('arming');
+          setTimeout(sendStart, 500); // 起動直後は少し待ってから
+        } else if (wantArm) {
+          wantArm = false; setState('開始できませんでした(再試行上限)', 'err'); setMode('idle');
+        } else {
+          setMode('online');
+        }
+      } catch (err) { log('自動再接続失敗: ' + err.message); }
+    });
+
+    // --- 登録 ---
+    function loadEntries() {
+      try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+      catch (e) { return []; }
+    }
+    function saveEntries(entries) { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+
+    function renderRecent() {
+      const entries = loadEntries();
+      const recent = entries.slice(-5).reverse();
+      const ul = $('recent');
+      ul.innerHTML = recent.length ? '' : '<li style="color:var(--dim);border:none;">まだ登録がありません</li>';
+      recent.forEach(en => {
+        const li = document.createElement('li');
+        li.innerHTML = `<span>${escapeHtml(en.name)}</span><span class="t">${Number(en.score).toFixed(2)} 秒</span>`;
+        ul.appendChild(li);
+      });
+    }
+    function escapeHtml(s) { return String(s).replace(/[&<>"]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' }[c])); }
+
+    $('register').addEventListener('click', () => {
+      const name = $('nameInput').value.trim();
+      const score = Number($('scoreInput').value);
+      if (!name) { $('nameInput').focus(); return; }
+      if (Number.isNaN(score)) { $('scoreInput').focus(); return; }
+      const entries = loadEntries();
+      entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
+      saveEntries(entries);
+      log(`登録: ${name} — ${score.toFixed(2)}秒`);
+      $('nameInput').value = '';
+      renderRecent();
+      // 次の選手に備えて表示クリア(デバイスはオンラインのまま)
+      currentRun = []; renderCrossings();
+    });
+
+    $('nextAthlete').addEventListener('click', () => { currentRun = []; renderCrossings(); $('nameInput').value = ''; });
+
+    // 手入力でもタイムが入ればいつでも登録可
+    $('scoreInput').addEventListener('input', () => { $('register').disabled = Number.isNaN(Number($('scoreInput').value)) || $('scoreInput').value === ''; });
+
+    renderRecent();
+    renderCrossings();
+  </script>
+</body>
+
+</html>
