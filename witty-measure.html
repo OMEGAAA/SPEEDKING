@@ -244,16 +244,23 @@
         return;
       }
       const first = currentRun[0];
+      const crossingEvents = currentRun.slice(1);
       body.innerHTML = '';
-      currentRun.forEach((ev, i) => {
+      if (crossingEvents.length === 0) {
+        body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--dim)">スタート検知済み。横切りを待っています</td></tr>';
+        setResult(null, 0);
+        return;
+      }
+      crossingEvents.forEach((ev, i) => {
         const elapsed = ev.seconds - first.seconds;
-        const lap = i === 0 ? 0 : ev.seconds - currentRun[i - 1].seconds;
+        const previous = i === 0 ? first : crossingEvents[i - 1];
+        const lap = ev.seconds - previous.seconds;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>#${ev.counter}</td><td class="hl">${elapsed.toFixed(2)} 秒</td><td>${i === 0 ? '—' : lap.toFixed(2) + ' 秒'}</td>`;
+        tr.innerHTML = `<td>#${i + 1}</td><td class="hl">${elapsed.toFixed(2)} 秒</td><td>${lap.toFixed(2)} 秒</td>`;
         body.appendChild(tr);
       });
       // 公式タイム = 1回目(スタート)→スタートを含めない4回目の差
-      const completedCrossings = Math.max(0, currentRun.length - 1);
+      const completedCrossings = crossingEvents.length;
       if (completedCrossings >= PRO_AGILITY_CROSSING_COUNT) {
         const finish = currentRun[PRO_AGILITY_CROSSING_COUNT];
         setResult(finish.seconds - first.seconds);
