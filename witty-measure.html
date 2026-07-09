@@ -49,7 +49,7 @@
     button.big { padding: 14px 26px; font-size: 17px; }
     button:disabled { opacity: 0.4; cursor: not-allowed; }
 
-    input[type="text"] {
+    input[type="text"], input[type="number"] {
       background: #0b0e11; color: var(--text); border: 1px solid var(--line);
       border-radius: 8px; padding: 11px 12px; font-size: 15px;
     }
@@ -108,6 +108,9 @@
       <label style="color:var(--dim);font-size:13px;">テスト名
         <input type="text" id="testName" value="Proagility2" size="16">
       </label>
+      <label style="color:var(--dim);font-size:13px;">完了回数
+        <input type="number" id="finishCount" value="4" min="1" max="20" step="1" style="width:74px;">
+      </label>
       <button id="connect">Witty 接続</button>
       <button id="arm" disabled>計測を開始</button>
       <button id="disconnect" class="secondary" disabled>切断</button>
@@ -122,11 +125,11 @@
   <div class="panel">
     <h2>2. 現在の計測</h2>
     <div class="result-box">
-      <div class="result-label">公式タイム(スタートを除くラップ4まで表示)</div>
+      <div class="result-label">公式タイム(受信した横切りを完了回数まで表示)</div>
       <div id="resultTime"><span class="result-none">— 待機中 —</span></div>
     </div>
     <table class="cross">
-      <thead><tr><th>横切り</th><th>スタートからの経過</th><th>ラップ</th></tr></thead>
+      <thead><tr><th>横切り</th><th>計測タイム</th><th>前回差</th></tr></thead>
       <tbody id="crossBody"><tr><td colspan="3" style="text-align:center;color:var(--dim)">まだ横切りがありません</td></tr></tbody>
     </table>
     <div class="row" style="margin-top:12px;">
@@ -142,7 +145,7 @@
       <button id="register" class="big" disabled>ランキングに登録</button>
     </div>
     <p class="hint">
-      スタートを除くラップ4まで表示し、5回目の横切りで「タイム」欄に公式タイムが自動で入ります。手直しも可能です。名前を入れて登録してください。
+      受信した横切りを順番に表示し、指定した完了回数に達すると「タイム」欄に公式タイムが自動で入ります。手直しも可能です。名前を入れて登録してください。
       登録後は <a id="rankLink" href="index.html" target="_blank">ランキング表</a> を再読み込みすると反映されます。
     </p>
     <ul class="recent" id="recent"></ul>
@@ -168,9 +171,14 @@
     let wantArm = false;       // 再列挙をまたいで「開始したい」意思を保持
     let armAttempts = 0;
     const MAX_ARM_ATTEMPTS = 5;
-    const PRO_AGILITY_CROSSING_COUNT = 5;
-    const DISPLAY_LAP_COUNT = PRO_AGILITY_CROSSING_COUNT - 1;
-    let currentRun = [];       // 現在の走の横切り(counter==1でリセット)
+    const DEFAULT_FINISH_CROSSING_COUNT = 4;
+    let currentRun = [];       // 現在の走の横切り。Witty側counterではなく受信順で数える。
+
+    function getFinishCrossingCount() {
+      const parsed = Math.floor(Number($('finishCount').value));
+      if (!Number.isFinite(parsed)) return DEFAULT_FINISH_CROSSING_COUNT;
+      return Math.min(20, Math.max(1, parsed));
+    }
 
     function now() {
       const d = new Date();
@@ -231,10 +239,15 @@
 
     // --- 横切り処理 ---
     function onCrossing(ev) {
-      if (ev.counter <= 1) currentRun = [];  // 新しい走
+      const last = currentRun[currentRun.length - 1];
+      if (last && last.tick === ev.tick && last.counter === ev.counter) {
+        log(`重複イベントを無視 tick=${ev.tick} counter=${ev.counter}`);
+        return;
+      }
+      if (last && ev.tick < last.tick) currentRun = [];  // タイマー側で新しい走が始まった
       currentRun.push(ev);
       renderCrossings();
-      log(`横切り#${ev.counter} tick=${ev.tick}`);
+      log(`横切り#${currentRun.length} tick=${ev.tick} counter=${ev.counter}`);
     }
 
     function renderCrossings() {
@@ -244,9 +257,8 @@
         setResult(null);
         return;
       }
-      const first = currentRun[0];
-      const crossingEvents = currentRun.slice(1);
-      const displayEvents = crossingEvents.slice(0, DISPLAY_LAP_COUNT);
+      const finishCrossingCount = getFinishCrossingCount();
+      const displayEvents = currentRun.slice(0, finishCrossingCount);
       body.innerHTML = '';
       if (displayEvents.length === 0) {
         body.innerHTML = '<tr><td colspan="3" style="text-align:center;color:var(--dim)">スタート検知済み。横切りを待っています</td></tr>';
@@ -254,28 +266,26 @@
         return;
       }
       displayEvents.forEach((ev, i) => {
-        const elapsed = ev.seconds - first.seconds;
-        const previous = i === 0 ? first : displayEvents[i - 1];
-        const lap = ev.seconds - previous.seconds;
+        const previous = i === 0 ? null : displayEvents[i - 1];
+        const lap = previous ? ev.seconds - previous.seconds : 0;
         const tr = document.createElement('tr');
-        tr.innerHTML = `<td>#${i + 1}</td><td class="hl">${elapsed.toFixed(2)} 秒</td><td>${lap.toFixed(2)} 秒</td>`;
+        tr.innerHTML = `<td>#${i + 1}</td><td class="hl">${ev.seconds.toFixed(2)} 秒</td><td>${previous ? lap.toFixed(2) : '-'} 秒</td>`;
         body.appendChild(tr);
       });
-      // 公式タイム = 1回目(スタート)→5回目(ゴール)の差。スタート行は表には出さない。
-      const completedLaps = Math.min(crossingEvents.length, DISPLAY_LAP_COUNT);
-      if (currentRun.length >= PRO_AGILITY_CROSSING_COUNT) {
-        const finish = currentRun[PRO_AGILITY_CROSSING_COUNT - 1];
-        setResult(finish.seconds - first.seconds);
+      const completedCrossings = Math.min(currentRun.length, finishCrossingCount);
+      if (currentRun.length >= finishCrossingCount) {
+        const finish = currentRun[finishCrossingCount - 1];
+        setResult(finish.seconds);
       } else {
-        setResult(null, completedLaps);
+        setResult(null, completedCrossings, finishCrossingCount);
       }
     }
 
-    function setResult(seconds, crossingCount = 0) {
+    function setResult(seconds, crossingCount = 0, finishCrossingCount = getFinishCrossingCount()) {
       const box = $('resultTime');
       if (seconds == null) {
-        const progress = crossingCount > 0 ? ` (${crossingCount}/${DISPLAY_LAP_COUNT})` : '';
-        box.innerHTML = `<span class="result-none">— ラップ4待ち${progress} —</span>`;
+        const progress = crossingCount > 0 ? ` (${crossingCount}/${finishCrossingCount})` : '';
+        box.innerHTML = `<span class="result-none">— 横切り${finishCrossingCount}回待ち${progress} —</span>`;
         $('scoreInput').value = '';
         $('register').disabled = true;
         return;
@@ -362,6 +372,15 @@
       catch (e) { return []; }
     }
     function saveEntries(entries) { localStorage.setItem(STORAGE_KEY, JSON.stringify(entries)); }
+    function notifyEntriesUpdated() {
+      try {
+        const channel = new BroadcastChannel('ranking-app');
+        channel.postMessage({ type: 'entries-updated' });
+        channel.close();
+      } catch (e) {
+        // The ranking page also refreshes on storage/focus, so this is only a fast path.
+      }
+    }
 
     function renderRecent() {
       const entries = loadEntries();
@@ -384,6 +403,7 @@
       const entries = loadEntries();
       entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
       saveEntries(entries);
+      notifyEntriesUpdated();
       log(`登録: ${name} — ${score.toFixed(2)}秒`);
       $('nameInput').value = '';
       renderRecent();
@@ -395,6 +415,7 @@
 
     // 手入力でもタイムが入ればいつでも登録可
     $('scoreInput').addEventListener('input', () => { $('register').disabled = Number.isNaN(Number($('scoreInput').value)) || $('scoreInput').value === ''; });
+    $('finishCount').addEventListener('input', renderCrossings);
 
     renderRecent();
     renderCrossings();

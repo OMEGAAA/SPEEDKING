@@ -1659,6 +1659,11 @@
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     }
 
+    function refreshEntriesFromStorage() {
+      entries = loadEntries();
+      renderRanking();
+    }
+
     function clampRouletteMax(value) {
       const parsed = Math.floor(Number(value));
       if (!Number.isFinite(parsed)) return DEFAULT_ROULETTE_MAX;
@@ -1980,6 +1985,22 @@
     document.getElementById('roulette-max-input').addEventListener('blur', (event) => {
       updateRouletteMax(event.target.value);
     });
+
+    window.addEventListener('storage', (event) => {
+      if (event.key === STORAGE_KEY) refreshEntriesFromStorage();
+    });
+
+    window.addEventListener('focus', refreshEntriesFromStorage);
+
+    let rankingChannel = null;
+    try {
+      rankingChannel = new BroadcastChannel('ranking-app');
+      rankingChannel.addEventListener('message', (event) => {
+        if (event.data && event.data.type === 'entries-updated') refreshEntriesFromStorage();
+      });
+    } catch (e) {
+      // Storage/focus events still keep the ranking in sync when BroadcastChannel is unavailable.
+    }
 
     applyTheme(theme);
     renderRanking();
