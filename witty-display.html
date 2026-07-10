@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="ja">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>スピード王 タイム表示</title>
+  <style>
+    :root {
+      color-scheme: dark;
+      --bg: #07090c;
+      --line: rgba(255, 255, 255, 0.12);
+      --text: #f7f3ea;
+      --dim: #8b93a1;
+      --accent: #e7bd56;
+      --accent-2: #ffdf85;
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --err: #ff6b6b;
+      --mono: "Cascadia Mono", "Consolas", monospace;
+      --serif: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
+    }
+
+    * { box-sizing: border-box; }
+
+    html, body { height: 100%; }
+
+    body {
+      margin: 0;
+      background:
+        radial-gradient(120% 90% at 50% 30%, #10141b 0%, var(--bg) 62%);
+      color: var(--text);
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
+    }
+
+    /* ---- 上部バー ---- */
+    header {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; padding: 14px 20px;
+    }
+    .event-title {
+      font-family: var(--serif);
+      color: var(--accent-2);
+      font-size: 17px; letter-spacing: .14em;
+    }
+    .top-right { display: flex; align-items: center; gap: 10px; }
+    .state {
+      font-size: 12.5px; padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+    }
+    .state.online { color: var(--ok); border-color: var(--ok); }
+    .state.arming { color: var(--warn); border-color: var(--warn); }
+    .state.err { color: var(--err); border-color: var(--err); }
+    .settings { display: flex; gap: 10px; align-items: center; }
+    .settings label { color: var(--dim); font-size: 11.5px; display: flex; align-items: center; gap: 5px; }
+    .settings input {
+      background: rgba(255, 255, 255, 0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px;
+      padding: 4px 8px; font-size: 12.5px;
+    }
+    .settings input#testName { width: 110px; }
+    .settings input#finishCount { width: 48px; }
+
+    /* ---- 中央: タイム ---- */
+    main {
+      display: grid; place-content: center; justify-items: center;
+      gap: clamp(8px, 2vh, 22px); text-align: center; padding: 0 16px;
+      min-height: 0;
+    }
+    #bigTime {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: min(23vw, 42vh);
+      line-height: 1;
+      letter-spacing: .01em;
+      color: var(--text);
+      transition: color .25s ease;
+    }
+    #bigTime .unit {
+      font-size: .28em; color: var(--dim); font-weight: 600; margin-left: .12em;
+    }
+    #bigTime.waiting { color: var(--dim); }
+    #bigTime.final {
+      color: var(--accent);
+      text-shadow: 0 0 60px rgba(231, 189, 86, 0.35);
+    }
+    @keyframes lockPulse {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.045); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      #bigTime.final { animation: lockPulse .5s ease; }
+    }
+
+    /* 光電管ゲートインジケータ: 横切り1回 = ビーム1本が点灯 */
+    #gates { display: flex; gap: clamp(10px, 2vw, 22px); }
+    #gates .gate {
+      width: clamp(6px, 1vw, 10px);
+      height: clamp(26px, 6vh, 52px);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.10);
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    #gates .gate.lit {
+      background: var(--accent);
+      box-shadow: 0 0 14px rgba(231, 189, 86, 0.55);
+    }
+    #phase { font-size: clamp(14px, 2.4vh, 20px); color: var(--dim); letter-spacing: .12em; }
+    #phase.final { color: var(--accent-2); }
+
+    /* ---- 下部: 操作バー ---- */
+    footer {
+      display: flex; justify-content: center; align-items: center;
+      flex-wrap: wrap; gap: 10px; padding: 16px 20px 22px;
+    }
+    button {
+      border: none; border-radius: 8px; cursor: pointer;
+      padding: 9px 18px; font-size: 14px; font-weight: 700;
+      font-family: inherit;
+    }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #measureBtn { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
+    #registerBtn { background: var(--accent); color: #221a08; }
+    #nameInput {
+      background: rgba(255, 255, 255, 0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 8px;
+      padding: 9px 12px; font-size: 14px; width: 200px;
+    }
+    .divider { width: 1px; height: 24px; background: var(--line); margin: 0 6px; }
+    #toast { font-size: 13px; color: var(--ok); min-width: 0; }
+
+    #unsupported {
+      display: none; color: var(--err); border: 1px solid var(--err);
+      border-radius: 8px; padding: 10px 14px; margin: 10px 20px 0; font-size: 14px;
+    }
+
+    :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="event-title">栃商杯 スピード王決定戦</div>
+    <div class="top-right">
+      <span id="state" class="state">未接続</span>
+      <div class="settings">
+        <label>テスト名<input type="text" id="testName" value="Proagility2"></label>
+        <label>完了回数<input type="number" id="finishCount" value="4" min="1" max="20" step="1"></label>
+      </div>
+    </div>
+  </header>
+
+  <div id="unsupported">このブラウザは WebHID 非対応です。Chrome か Edge で開いてください。</div>
+
+  <main>
+    <div id="bigTime" class="waiting">--<span class="unit">秒</span></div>
+    <div id="gates"></div>
+    <div id="phase">計測ボタンで開始</div>
+  </main>
+
+  <footer>
+    <button id="measureBtn">計測</button>
+    <span class="divider"></span>
+    <input type="text" id="nameInput" placeholder="選手名 / ゼッケン番号">
+    <button id="registerBtn" disabled>ランキングに登録</button>
+    <span id="toast"></span>
+  </footer>
+
+  <script type="module">
+    import {
+      buildTestStart, scanFrames, parseError, parseTestResultEvent, BaseCmd, WittyCmd,
+    } from './witty-protocol.js';
+
+    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 index.html と共有
+    const $ = (id) => document.getElementById(id);
+
+    if (!('hid' in navigator)) { $('unsupported').style.display = 'block'; }
+
+    let device = null;
+    let mode = 'disconnected'; // disconnected | idle | arming | online
+    let wantArm = false;       // 再列挙をまたいで「開始したい」意思を保持
+    let armAttempts = 0;
+    const MAX_ARM_ATTEMPTS = 5;
+    const DEFAULT_FINISH_CROSSING_COUNT = 4;
+    let currentRun = [];
+
+    function getFinishCrossingCount() {
+      const parsed = Math.floor(Number($('finishCount').value));
+      if (!Number.isFinite(parsed)) return DEFAULT_FINISH_CROSSING_COUNT;
+      return Math.min(20, Math.max(1, parsed));
+    }
+
+    function log(msg) { console.log(`[witty-display] ${msg}`); }
+
+    function setState(text, cls) { const s = $('state'); s.textContent = text; s.className = 'state' + (cls ? ' ' + cls : ''); }
+    function setMode(m) {
+      mode = m;
+      const btn = $('measureBtn');
+      btn.disabled = (m === 'arming');
+      if (m === 'online') { setState('計測中', 'online'); btn.textContent = '次の走へ(クリア)'; }
+      else if (m === 'arming') { setState('計測開始中…', 'arming'); btn.textContent = '開始中…'; }
+      else if (m === 'idle') { setState('接続済み(未開始)'); btn.textContent = '計測を開始'; }
+      else { setState('未接続'); btn.textContent = '計測'; }
+    }
+
+    // --- HID 受信処理 ---
+    function onInputReport(e) {
+      const data = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+      if (data.every(b => b === 0xff)) return; // アイドル
+      const frames = scanFrames(data);
+      for (const f of frames) handleFrame(f);
+    }
+
+    function handleFrame(f) {
+      if (f.command === BaseCmd.ERROR) {
+        const err = parseError(f.payload);
+        if (err && err.failedCommand === WittyCmd.SET_TEST_START) {
+          wantArm = false;
+          setMode('idle');
+          setState('開始失敗: テスト名を確認 (code ' + err.errorCode + ')', 'err');
+        }
+        return;
+      }
+      if (f.command === WittyCmd.SET_TEST_START && f.isResponse) {
+        wantArm = false; armAttempts = 0;
+        setMode('online');
+        log('計測開始 受理(オンライン計測モード)');
+        return;
+      }
+      if (f.command === WittyCmd.EVENT_TEST_RESULTS) {
+        const ev = parseTestResultEvent(f.payload);
+        if (ev) onCrossing(ev);
+      }
+    }
+
+    // --- 横切り処理(witty-measure.html と同じ判定ロジック) ---
+    function onCrossing(ev) {
+      const last = currentRun[currentRun.length - 1];
+      if (last && last.tick === ev.tick && last.counter === ev.counter) return; // 重複
+      if (last && ev.tick < last.tick) currentRun = [];  // タイマー側で新しい走が始まった
+      currentRun.push(ev);
+      render();
+      log(`横切り#${currentRun.length} tick=${ev.tick}`);
+    }
+
+    // --- 表示 ---
+    function render() {
+      const finishCount = getFinishCrossingCount();
+      const big = $('bigTime');
+      const phase = $('phase');
+      const done = Math.min(currentRun.length, finishCount);
+      const finished = currentRun.length >= finishCount;
+
+      renderGates(finishCount, done);
+
+      if (currentRun.length === 0) {
+        big.className = 'waiting';
+        big.innerHTML = '--<span class="unit">秒</span>';
+        phase.className = '';
+        phase.textContent = (mode === 'online') ? 'スタート待ち' : '計測ボタンで開始';
+        $('registerBtn').disabled = true;
+        return;
+      }
+
+      if (finished) {
+        const official = currentRun[finishCount - 1].seconds;
+        big.className = 'final';
+        big.innerHTML = `${official.toFixed(2)}<span class="unit">秒</span>`;
+        phase.className = 'final';
+        phase.textContent = '確定タイム';
+        $('registerBtn').disabled = false;
+      } else {
+        const latest = currentRun[currentRun.length - 1].seconds;
+        big.className = '';
+        big.innerHTML = `${latest.toFixed(2)}<span class="unit">秒</span>`;
+        phase.className = '';
+        phase.textContent = `計測中 ${done}/${finishCount}`;
+        $('registerBtn').disabled = true;
+      }
+    }
+
+    function renderGates(total, lit) {
+      const box = $('gates');
+      box.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const g = document.createElement('div');
+        g.className = 'gate' + (i < lit ? ' lit' : '');
+        box.appendChild(g);
+      }
+    }
+
+    // --- 接続・開始の自動化(witty-measure.html と同じシーケンス) ---
+    async function attachDevice(dev) {
+      device = dev;
+      if (!device.opened) await device.open();
+      device.removeEventListener('inputreport', onInputReport);
+      device.addEventListener('inputreport', onInputReport);
+      log(`接続: ${device.productName || '(名称なし)'} PID=0x${device.productId.toString(16)}`);
+    }
+
+    async function sendStart() {
+      if (!device) return;
+      try {
+        const frame = buildTestStart($('testName').value);
+        await device.sendReport(0, frame);
+        log(`計測開始コマンド送信 (試行${armAttempts})`);
+      } catch (e) {
+        log('送信失敗: ' + e.message + '(再列挙中かもしれません)');
+      }
+    }
+
+    async function arm() {
+      wantArm = true; armAttempts = 1;
+      setMode('arming');
+      await sendStart();
+    }
+
+    $('measureBtn').addEventListener('click', async () => {
+      if (mode === 'online') { currentRun = []; $('nameInput').value = ''; render(); return; }
+      if (mode === 'idle') { await arm(); return; }
+      // 未接続 → 接続してそのまま計測開始
+      try {
+        const devs = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x16d0 }] });
+        if (!devs.length) return;
+        await attachDevice(devs[0]);
+        await arm();
+      } catch (e) { log('接続エラー: ' + e.message); setState('接続失敗', 'err'); }
+    });
+
+    // 再列挙対応: 切断されても開始意思があれば待ち受け
+    navigator.hid && navigator.hid.addEventListener('disconnect', (e) => {
+      if (device && e.device === device) {
+        device = null;
+        if (wantArm || mode === 'online') {
+          setState('再接続待ち…', 'arming');
+          log('切断 — 再接続を待機します');
+        } else { setMode('disconnected'); }
+      }
+    });
+
+    navigator.hid && navigator.hid.addEventListener('connect', async (e) => {
+      if (device || e.device.vendorId !== 0x16d0) return;
+      if (!wantArm && mode !== 'online') return;
+      log('タイマー再出現 — 自動再接続します');
+      try {
+        await attachDevice(e.device);
+        if (wantArm && armAttempts < MAX_ARM_ATTEMPTS) {
+          armAttempts++;
+          setMode('arming');
+          setTimeout(sendStart, 500); // 起動直後は少し待ってから
+        } else if (wantArm) {
+          wantArm = false; setState('開始できませんでした(再試行上限)', 'err'); setMode('idle');
+        } else {
+          setMode('online');
+        }
+      } catch (err) { log('自動再接続失敗: ' + err.message); }
+    });
+
+    // --- 登録(index.html と同じ localStorage 形式) ---
+    function loadEntries() {
+      try { const raw = localStorage.getItem(STORAGE_KEY); return raw ? JSON.parse(raw) : []; }
+      catch (e) { return []; }
+    }
+    function notifyEntriesUpdated() {
+      try {
+        const channel = new BroadcastChannel('ranking-app');
+        channel.postMessage({ type: 'entries-updated' });
+        channel.close();
+      } catch (e) { /* ランキング表側は storage/focus でも更新される */ }
+    }
+
+    let toastTimer = null;
+    function toast(msg) {
+      $('toast').textContent = msg;
+      clearTimeout(toastTimer);
+      toastTimer = setTimeout(() => { $('toast').textContent = ''; }, 4000);
+    }
+
+    $('registerBtn').addEventListener('click', () => {
+      const finishCount = getFinishCrossingCount();
+      if (currentRun.length < finishCount) return;
+      const name = $('nameInput').value.trim();
+      if (!name) { $('nameInput').focus(); return; }
+      const score = Number(currentRun[finishCount - 1].seconds.toFixed(2));
+      const entries = loadEntries();
+      entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
+      notifyEntriesUpdated();
+      toast(`登録しました: ${name} — ${score.toFixed(2)}秒`);
+      log(`登録: ${name} — ${score.toFixed(2)}秒`);
+      $('nameInput').value = '';
+      currentRun = [];
+      render(); // 次の選手に備えて表示クリア(計測モードは維持)
+    });
+
+    $('finishCount').addEventListener('input', render);
+
+    // 実機なしで表示を確認するための検証用フック(本番動作には影響しない)
+    window.__simulateCrossing = (seconds) => {
+      const counter = (currentRun[currentRun.length - 1]?.counter ?? 0) + 1;
+      onCrossing({ tick: Math.round(seconds * 25000), counter, seconds });
+    };
+
+    setMode('disconnected');
+    render();
+  </script>
+</body>
+
+</html>
