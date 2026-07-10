@@ -202,9 +202,9 @@
       mode = m;
       const btn = $('measureBtn');
       btn.disabled = (m === 'arming');
-      if (m === 'online') { setState('計測中', 'online'); btn.textContent = '次の走へ(クリア)'; }
+      if (m === 'online') { setState('計測中', 'online'); btn.textContent = '計測'; }
       else if (m === 'arming') { setState('計測開始中…', 'arming'); btn.textContent = '開始中…'; }
-      else if (m === 'idle') { setState('接続済み(未開始)'); btn.textContent = '計測を開始'; }
+      else if (m === 'idle') { setState('接続済み(未開始)'); btn.textContent = '計測'; }
       else { setState('未接続'); btn.textContent = '計測'; }
     }
 
@@ -267,18 +267,17 @@
         return;
       }
 
-      // Wittyのtickは計測開始からの通算で走ごとに0へ戻らないため、
-      // その走の1回目の横切りを基準(0.00)にした差分で表示する
-      const base = currentRun[0].seconds;
+      // タイムは witty-measure.html と同じ方式(tickの絶対秒をそのまま表示)。
+      // 走ごとのタイムリセットは、計測ボタンで計測開始コマンドを再送して行う。
       if (finished) {
-        const official = currentRun[finishCount - 1].seconds - base;
+        const official = currentRun[finishCount - 1].seconds;
         big.className = 'final';
         big.innerHTML = `${official.toFixed(2)}<span class="unit">秒</span>`;
         phase.className = 'final';
         phase.textContent = '確定タイム';
         $('registerBtn').disabled = false;
       } else {
-        const latest = currentRun[currentRun.length - 1].seconds - base;
+        const latest = currentRun[currentRun.length - 1].seconds;
         big.className = '';
         big.innerHTML = `${latest.toFixed(2)}<span class="unit">秒</span>`;
         phase.className = '';
@@ -324,7 +323,12 @@
     }
 
     $('measureBtn').addEventListener('click', async () => {
-      if (mode === 'online') { currentRun = []; $('nameInput').value = ''; render(); return; }
+      if (mode === 'online') {
+        // 表示をクリアし、計測開始コマンドを再送してタイマーのタイムをリセット
+        currentRun = []; $('nameInput').value = ''; render();
+        await arm();
+        return;
+      }
       if (mode === 'idle') { await arm(); return; }
       // 未接続 → 接続してそのまま計測開始
       try {
@@ -389,7 +393,7 @@
       if (currentRun.length < finishCount) return;
       const name = $('nameInput').value.trim();
       if (!name) { $('nameInput').focus(); return; }
-      const score = Number((currentRun[finishCount - 1].seconds - currentRun[0].seconds).toFixed(2));
+      const score = Number(currentRun[finishCount - 1].seconds.toFixed(2));
       const entries = loadEntries();
       entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
