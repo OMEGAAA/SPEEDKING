@@ -1092,6 +1092,36 @@
       transform: translateX(-50%) translateY(0);
     }
 
+    .measure-link {
+      position: fixed;
+      right: 18px;
+      bottom: 18px;
+      z-index: 20;
+      display: inline-block;
+      text-decoration: none;
+      background: var(--nav-bg);
+      color: var(--text-dim);
+      border: 1px solid var(--nav-border);
+      border-radius: 8px;
+      padding: 10px 16px;
+      font-size: 13.5px;
+      font-weight: 800;
+      letter-spacing: 0.04em;
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(18px);
+      transition: color 0.2s ease, border-color 0.2s ease;
+    }
+
+    .measure-link:hover {
+      color: var(--text);
+      border-color: var(--accent);
+    }
+
+    .measure-link:focus-visible {
+      outline: 2px solid var(--focus-ring);
+      outline-offset: 2px;
+    }
+
     @media (min-width: 560px) {
       .rank-list {
         display: grid;
@@ -1600,6 +1630,8 @@
   </div>
 
   <div id="toast" class="toast"></div>
+
+  <a class="measure-link" href="witty-display.html">計測画面へ</a>
 
   <script>
     const STORAGE_KEY = 'ranking-app-entries';
