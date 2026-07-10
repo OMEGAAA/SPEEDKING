@@ -267,15 +267,18 @@
         return;
       }
 
+      // Wittyのtickは計測開始からの通算で走ごとに0へ戻らないため、
+      // その走の1回目の横切りを基準(0.00)にした差分で表示する
+      const base = currentRun[0].seconds;
       if (finished) {
-        const official = currentRun[finishCount - 1].seconds;
+        const official = currentRun[finishCount - 1].seconds - base;
         big.className = 'final';
         big.innerHTML = `${official.toFixed(2)}<span class="unit">秒</span>`;
         phase.className = 'final';
         phase.textContent = '確定タイム';
         $('registerBtn').disabled = false;
       } else {
-        const latest = currentRun[currentRun.length - 1].seconds;
+        const latest = currentRun[currentRun.length - 1].seconds - base;
         big.className = '';
         big.innerHTML = `${latest.toFixed(2)}<span class="unit">秒</span>`;
         phase.className = '';
@@ -386,7 +389,7 @@
       if (currentRun.length < finishCount) return;
       const name = $('nameInput').value.trim();
       if (!name) { $('nameInput').focus(); return; }
-      const score = Number(currentRun[finishCount - 1].seconds.toFixed(2));
+      const score = Number((currentRun[finishCount - 1].seconds - currentRun[0].seconds).toFixed(2));
       const entries = loadEntries();
       entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
