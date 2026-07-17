@@ -1,0 +1,34 @@
+{
+  "name": "witty-timer-display",
+  "productName": "witty-timer-display",
+  "version": "1.0.0",
+  "description": "Microgate Witty タイマー接続・計測・タイム表示アプリ",
+  "main": "electron/main.js",
+  "private": true,
+  "scripts": {
+    "start": "electron .",
+    "start:register": "electron electron/main-register.js",
+    "dist": "electron-builder --win portable",
+    "dist:register": "electron-builder --win portable --config electron-builder-register.json"
+  },
+  "build": {
+    "appId": "jp.speedking.witty",
+    "productName": "witty-timer-display",
+    "files": [
+      "electron/**",
+      "witty-display.html",
+      "witty-protocol.js"
+    ],
+    "win": {
+      "target": "portable"
+    },
+    "portable": {
+      "artifactName": "witty-timer-display.exe"
+    }
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.0.0",
+    "puppeteer-core": "^25.3.0"
+  }
+}

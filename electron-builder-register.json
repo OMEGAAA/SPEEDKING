@@ -1,0 +1,24 @@
+{
+  "appId": "jp.speedking.witty.register",
+  "productName": "witty-timer-register",
+  "files": [
+    "electron/**",
+    "witty-display-register.html",
+    "index.html",
+    "firebase-config.js",
+    "firebase-ranking.js",
+    "witty-protocol.js"
+  ],
+  "directories": {
+    "output": "dist-register"
+  },
+  "extraMetadata": {
+    "main": "electron/main-register.js"
+  },
+  "win": {
+    "target": "portable"
+  },
+  "portable": {
+    "artifactName": "witty-timer-register.exe"
+  }
+}

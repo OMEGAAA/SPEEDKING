@@ -105,6 +105,12 @@
   <div class="panel">
     <h2>1. 接続と計測開始</h2>
     <div class="row">
+      <label style="color:var(--dim);font-size:13px;">測定モード
+        <select id="modeSelect" style="background:#0b0e11;color:var(--text);border:1px solid var(--line);border-radius:8px;padding:11px 12px;font-size:15px;">
+          <option value="pro-agility-2_5" selected>プロアジリティ 2.5m-2.5m</option>
+          <option value="pro-agility-5">プロアジリティ 5m-5m</option>
+        </select>
+      </label>
       <label style="color:var(--dim);font-size:13px;">テスト名
         <input type="text" id="testName" value="Proagility2" size="16">
       </label>
@@ -171,8 +177,22 @@
     let wantArm = false;       // 再列挙をまたいで「開始したい」意思を保持
     let armAttempts = 0;
     const MAX_ARM_ATTEMPTS = 5;
-    const DEFAULT_FINISH_CROSSING_COUNT = 4;
+    // 測定モードのプリセット。テスト名はWittyタイマーに登録済みの名称に合わせる。
+    const MODES = {
+      'pro-agility-2_5': { testName: 'Proagility2', finishCount: 4 },
+      'pro-agility-5': { testName: 'Proagility', finishCount: 2 },
+    };
+    const DEFAULT_FINISH_CROSSING_COUNT = MODES['pro-agility-2_5'].finishCount;
     let currentRun = [];       // 現在の走の横切り。Witty側counterではなく受信順で数える。
+
+    function applyMode(key) {
+      const preset = MODES[key];
+      if (!preset) return;
+      $('testName').value = preset.testName;
+      $('finishCount').value = preset.finishCount;
+      renderCrossings();
+      log(`測定モード変更: ${key === 'pro-agility-5' ? '5m-5m' : '2.5m-2.5m'} (テスト名=${preset.testName}, 完了回数=${preset.finishCount})`);
+    }
 
     function getFinishCrossingCount() {
       const parsed = Math.floor(Number($('finishCount').value));
@@ -416,6 +436,7 @@
     // 手入力でもタイムが入ればいつでも登録可
     $('scoreInput').addEventListener('input', () => { $('register').disabled = Number.isNaN(Number($('scoreInput').value)) || $('scoreInput').value === ''; });
     $('finishCount').addEventListener('input', renderCrossings);
+    $('modeSelect').addEventListener('change', () => applyMode($('modeSelect').value));
 
     renderRecent();
     renderCrossings();

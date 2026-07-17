@@ -438,6 +438,42 @@
       animation: championRise 0.5s cubic-bezier(0.2, 0.85, 0.28, 1.15) both, championAura 4s ease-in-out 0.5s infinite;
     }
 
+    .sync-status {
+      display: inline-flex;
+      align-items: center;
+      gap: 7px;
+      min-height: 28px;
+      margin-top: 14px;
+      border: 1px solid var(--line);
+      border-radius: 999px;
+      background: var(--subtle-surface);
+      color: var(--text-dim);
+      font-size: 11px;
+      font-weight: 900;
+      letter-spacing: 0.06em;
+      padding: 0 11px;
+    }
+
+    .sync-status::before {
+      width: 8px;
+      height: 8px;
+      border-radius: 50%;
+      background: #d9a93f;
+      content: "";
+      box-shadow: 0 0 9px rgba(217, 169, 63, 0.65);
+    }
+
+    .sync-status.online::before {
+      background: #42d392;
+      box-shadow: 0 0 9px rgba(66, 211, 146, 0.7);
+    }
+
+    .sync-status.local::before,
+    .sync-status.error::before {
+      background: #ff6b6b;
+      box-shadow: 0 0 9px rgba(255, 107, 107, 0.6);
+    }
+
     .champion-badge {
       display: inline-flex;
       align-items: center;
@@ -1620,6 +1656,7 @@
         <button id="theme-light" class="theme-option" type="button" aria-pressed="false">ライト</button>
         <button id="theme-dark" class="theme-option" type="button" aria-pressed="false">ダーク</button>
       </div>
+      <div id="sync-status" class="sync-status" role="status" aria-live="polite">クラウドへ接続中</div>
     </header>
 
     <nav aria-label="画面切り替え">
@@ -1712,7 +1749,7 @@
           </div>
           <div class="field">
             <label for="score-input">タイム（秒）</label>
-            <input id="score-input" type="number" step="0.01" min="0" placeholder="例）4.85" inputmode="decimal" required>
+            <input id="score-input" type="number" step="0.01" min="0.01" max="86400" placeholder="例）4.85" inputmode="decimal" required>
           </div>
           <button type="submit" class="submit-btn">タイムを登録してランキングを見る</button>
         </form>
@@ -1737,6 +1774,8 @@
 
   <a class="measure-link" href="witty-display.html">計測画面へ</a>
 
+  <script src="firebase-config.js"></script>
+  <script type="module" src="firebase-ranking.js"></script>
   <script>
     const STORAGE_KEY = 'ranking-app-entries';
     const ROULETTE_MAX_KEY = 'ranking-app-roulette-max';
@@ -1791,11 +1830,20 @@
       }
     }
 
-    function saveEntries(entries) {
+    function saveLocalEntries(entries) {
       localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
     }
 
-    function refreshEntriesFromStorage() {
+    async function refreshEntriesFromStorage() {
+      if (rankingStore) {
+        try {
+          await importPendingLocalEntries();
+        } catch (error) {
+          console.error('計測画面のランキング登録を同期できませんでした', error);
+          showToast('計測結果をクラウドへ同期できませんでした');
+        }
+        return;
+      }
       entries = loadEntries();
       renderRanking();
       renderEntryList();
@@ -1831,6 +1879,10 @@
     }
 
     let entries = loadEntries();
+    let rankingStore = null;
+    let syncMode = 'connecting';
+    let stopEntrySync = null;
+    let localMigrationPromise = null;
     let showAllRanks = false;
     let rouletteMaxNumber = loadRouletteMax();
     let rouletteStopTimer = null;
@@ -1848,6 +1900,51 @@
       if (name === 'ranking') renderRanking();
       if (name === 'roulette') renderRoulette();
       if (name === 'entrylist') renderEntryList();
+    }
+
+    function setSyncStatus(mode, message) {
+      syncMode = mode;
+      const status = document.getElementById('sync-status');
+      status.className = `sync-status ${mode}`;
+      status.textContent = message;
+    }
+
+    function importPendingLocalEntries() {
+      if (!rankingStore) return Promise.resolve();
+      if (localMigrationPromise) return localMigrationPromise;
+
+      localMigrationPromise = (async () => {
+        const localEntries = loadEntries();
+        if (localEntries.length === 0) return;
+        await rankingStore.importLocalEntries(localEntries);
+        localStorage.removeItem(STORAGE_KEY);
+      })().finally(() => {
+        localMigrationPromise = null;
+      });
+
+      return localMigrationPromise;
+    }
+
+    async function removeEntry(entry) {
+      try {
+        if (rankingStore) {
+          await rankingStore.deleteEntry(entry.id);
+          return;
+        }
+
+        if (syncMode === 'local') {
+          entries = entries.filter(item => item.id !== entry.id);
+          saveLocalEntries(entries);
+          renderRanking();
+          renderEntryList();
+          return;
+        }
+
+        showToast('クラウドに接続できていないため削除できません');
+      } catch (error) {
+        console.error('ランキングの削除に失敗しました', error);
+        showToast('削除に失敗しました。接続を確認してください');
+      }
     }
 
     function renderStats(sorted) {
@@ -1870,11 +1967,7 @@
       document.getElementById('champion-name').textContent = entry.name;
       document.getElementById('champion-score-value').textContent = formatTimeValue(entry.score);
       deleteButton.setAttribute('aria-label', `${entry.name}を削除`);
-      deleteButton.onclick = () => {
-        entries = entries.filter(e => e.id !== entry.id);
-        saveEntries(entries);
-        renderRanking();
-      };
+      deleteButton.onclick = () => removeEntry(entry);
     }
 
     function renderRanking() {
@@ -1914,11 +2007,7 @@
       `;
         li.querySelector('.rank-name').textContent = entry.name;
         li.querySelector('.rank-score').textContent = formatScore(entry.score);
-        li.querySelector('.del-btn').addEventListener('click', () => {
-          entries = entries.filter(e => e.id !== entry.id);
-          saveEntries(entries);
-          renderRanking();
-        });
+        li.querySelector('.del-btn').addEventListener('click', () => removeEntry(entry));
         list.appendChild(li);
       });
     }
@@ -2102,23 +2191,40 @@
       setTimeout(() => toast.classList.remove('show'), 1800);
     }
 
-    document.getElementById('entry-form').addEventListener('submit', (e) => {
+    document.getElementById('entry-form').addEventListener('submit', async (e) => {
       e.preventDefault();
       const nameInput = document.getElementById('name-input');
       const scoreInput = document.getElementById('score-input');
+      const submitButton = e.currentTarget.querySelector('[type="submit"]');
       const name = nameInput.value.trim();
       const score = Number(scoreInput.value);
 
-      if (!name || Number.isNaN(score)) return;
+      if (!name || !Number.isFinite(score) || score <= 0 || score > 86400) return;
 
-      entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
-      saveEntries(entries);
+      submitButton.disabled = true;
+      try {
+        if (rankingStore) {
+          await rankingStore.addEntry({ name, score });
+        } else if (syncMode === 'local') {
+          entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
+          saveLocalEntries(entries);
+          renderRanking();
+          renderEntryList();
+        } else {
+          showToast('クラウドへの接続完了後に登録してください');
+          return;
+        }
 
-      nameInput.value = '';
-      scoreInput.value = '';
-
-      showToast(`「${name}」を登録しました`);
-      showScreen('ranking');
+        nameInput.value = '';
+        scoreInput.value = '';
+        showToast(`「${name}」を登録しました`);
+        showScreen('ranking');
+      } catch (error) {
+        console.error('ランキングの登録に失敗しました', error);
+        showToast('登録に失敗しました。接続を確認してください');
+      } finally {
+        submitButton.disabled = false;
+      }
     });
 
     document.getElementById('more-ranks-btn').addEventListener('click', () => {
@@ -2159,6 +2265,54 @@
     } catch (e) {
       // Storage/focus events still keep the ranking in sync when BroadcastChannel is unavailable.
     }
+
+    window.addEventListener('ranking-store-ready', async (event) => {
+      rankingStore = event.detail;
+      setSyncStatus('connecting', 'ランキングを同期中');
+
+      try {
+        stopEntrySync = rankingStore.subscribe((remoteEntries) => {
+          entries = remoteEntries;
+          renderRanking();
+          renderEntryList();
+          setSyncStatus('online', 'リアルタイム同期中');
+        }, (error) => {
+          console.error('ランキングの同期に失敗しました', error);
+          setSyncStatus('error', '同期エラー');
+          showToast('ランキングを同期できませんでした');
+        });
+
+        try {
+          await importPendingLocalEntries();
+        } catch (migrationError) {
+          console.error('ローカルランキングの移行に失敗しました', migrationError);
+          showToast('旧ランキングの移行に失敗しました');
+        }
+      } catch (error) {
+        console.error('Firebase の初期化に失敗しました', error);
+        setSyncStatus('error', '同期エラー');
+        showToast('Firebase の設定と接続を確認してください');
+      }
+    });
+
+    window.addEventListener('ranking-store-unconfigured', () => {
+      setSyncStatus('local', 'ローカル保存（Firebase未設定）');
+    });
+
+    window.addEventListener('ranking-store-error', (event) => {
+      console.error('Firebase への接続に失敗しました', event.detail);
+      setSyncStatus('error', 'Firebase接続エラー');
+    });
+
+    window.addEventListener('beforeunload', () => {
+      if (stopEntrySync) stopEntrySync();
+    });
+
+    setTimeout(() => {
+      if (syncMode === 'connecting' && !rankingStore) {
+        setSyncStatus('error', 'Firebase接続エラー');
+      }
+    }, 10000);
 
     applyTheme(theme);
     renderRanking();
