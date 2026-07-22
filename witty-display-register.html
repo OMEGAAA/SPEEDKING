@@ -4,7 +4,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>プロアジリティタイマー(ランキング登録)</title>
+  <title>プロアジリティタイマー</title>
   <style>
     :root {
       color-scheme: dark;
@@ -21,9 +21,14 @@
       --serif: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
-    html, body { height: 100%; }
+    html,
+    body {
+      height: 100%;
+    }
 
     body {
       margin: 0;
@@ -38,37 +43,94 @@
 
     /* ---- 上部バー ---- */
     header {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 12px; padding: 14px 20px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px;
     }
+
     .event-title {
       font-family: var(--serif);
       color: var(--accent-2);
-      font-size: 17px; letter-spacing: .14em;
+      font-size: 17px;
+      letter-spacing: .14em;
     }
-    .top-right { display: flex; align-items: center; gap: 10px; }
+
+    .top-right {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+
     .state {
-      font-size: 12.5px; padding: 5px 12px; border-radius: 999px;
-      border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+      font-size: 12.5px;
+      padding: 5px 12px;
+      border-radius: 999px;
+      border: 1px solid var(--line);
+      color: var(--dim);
+      white-space: nowrap;
     }
-    .state.online { color: var(--ok); border-color: var(--ok); }
-    .state.arming { color: var(--warn); border-color: var(--warn); }
-    .state.err { color: var(--err); border-color: var(--err); }
-    .settings { display: flex; gap: 10px; align-items: center; }
-    .settings label { color: var(--dim); font-size: 11.5px; display: flex; align-items: center; gap: 5px; }
+
+    .state.online {
+      color: var(--ok);
+      border-color: var(--ok);
+    }
+
+    .state.arming {
+      color: var(--warn);
+      border-color: var(--warn);
+    }
+
+    .state.err {
+      color: var(--err);
+      border-color: var(--err);
+    }
+
+    .settings {
+      display: flex;
+      gap: 10px;
+      align-items: center;
+    }
+
+    .settings label {
+      color: var(--dim);
+      font-size: 11.5px;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+
     .settings input {
-      background: rgba(255, 255, 255, 0.04); color: var(--text);
-      border: 1px solid var(--line); border-radius: 6px;
-      padding: 4px 8px; font-size: 12.5px;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12.5px;
     }
-    .settings input#testName { width: 110px; }
-    .settings input#finishCount { width: 48px; }
+
+    .settings input#testName {
+      width: 110px;
+    }
+
+    .settings input#finishCount {
+      width: 48px;
+    }
+
     .settings select {
-      background: rgba(255, 255, 255, 0.04); color: var(--text);
-      border: 1px solid var(--line); border-radius: 6px;
-      padding: 4px 8px; font-size: 12.5px; font-family: inherit;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 6px;
+      padding: 4px 8px;
+      font-size: 12.5px;
+      font-family: inherit;
     }
-    .settings select option { background: #14181c; }
+
+    .settings select option {
+      background: #14181c;
+    }
 
     /* ---- 中央: タイム ---- */
     main {
@@ -76,12 +138,20 @@
       grid-template-columns: minmax(0, 1fr) minmax(320px, 34vw);
       align-items: center;
       gap: clamp(18px, 3vw, 42px);
-      width: 100%; min-height: 0; padding: 0 clamp(16px, 3vw, 44px);
+      width: 100%;
+      min-height: 0;
+      padding: 0 clamp(16px, 3vw, 44px);
     }
+
     .timer-panel {
-      display: grid; place-content: center; justify-items: center;
-      gap: clamp(8px, 2vh, 22px); min-width: 0; text-align: center;
+      display: grid;
+      place-content: center;
+      justify-items: center;
+      gap: clamp(8px, 2vh, 22px);
+      min-width: 0;
+      text-align: center;
     }
+
     #bigTime {
       font-family: var(--mono);
       font-variant-numeric: tabular-nums;
@@ -92,25 +162,49 @@
       color: var(--text);
       transition: color .25s ease;
     }
+
     #bigTime .unit {
-      font-size: .28em; color: var(--dim); font-weight: 600; margin-left: .12em;
+      font-size: .28em;
+      color: var(--dim);
+      font-weight: 600;
+      margin-left: .12em;
     }
-    #bigTime.waiting { color: var(--dim); }
+
+    #bigTime.waiting {
+      color: var(--dim);
+    }
+
     #bigTime.final {
       color: var(--accent);
       text-shadow: 0 0 60px rgba(231, 189, 86, 0.35);
     }
+
     @keyframes lockPulse {
-      0% { transform: scale(1); }
-      35% { transform: scale(1.045); }
-      100% { transform: scale(1); }
+      0% {
+        transform: scale(1);
+      }
+
+      35% {
+        transform: scale(1.045);
+      }
+
+      100% {
+        transform: scale(1);
+      }
     }
+
     @media (prefers-reduced-motion: no-preference) {
-      #bigTime.final { animation: lockPulse .5s ease; }
+      #bigTime.final {
+        animation: lockPulse .5s ease;
+      }
     }
 
     /* 光電管ゲートインジケータ: 横切り1回 = ビーム1本が点灯 */
-    #gates { display: flex; gap: clamp(10px, 2vw, 22px); }
+    #gates {
+      display: flex;
+      gap: clamp(10px, 2vw, 22px);
+    }
+
     #gates .gate {
       width: clamp(6px, 1vw, 10px);
       height: clamp(26px, 6vh, 52px);
@@ -118,131 +212,334 @@
       background: rgba(255, 255, 255, 0.10);
       transition: background .2s ease, box-shadow .2s ease;
     }
+
     #gates .gate.lit {
       background: var(--accent);
       box-shadow: 0 0 14px rgba(231, 189, 86, 0.55);
     }
-    #phase { font-size: clamp(14px, 2.4vh, 20px); color: var(--dim); letter-spacing: .12em; }
-    #phase.final { color: var(--accent-2); }
+
+    #phase {
+      font-size: clamp(14px, 2.4vh, 20px);
+      color: var(--dim);
+      letter-spacing: .12em;
+    }
+
+    #phase.final {
+      color: var(--accent-2);
+    }
 
     .latest-lap {
-      display: flex; justify-content: space-between; align-items: baseline;
-      width: min(100%, 440px); min-height: 48px; padding: 7px 14px;
-      border: 1px solid rgba(231, 189, 86, 0.35); border-radius: 9px;
-      background: rgba(231, 189, 86, 0.06); color: var(--dim);
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      width: min(100%, 440px);
+      min-height: 48px;
+      padding: 7px 14px;
+      border: 1px solid rgba(231, 189, 86, 0.35);
+      border-radius: 9px;
+      background: rgba(231, 189, 86, 0.06);
+      color: var(--dim);
     }
-    #latestLapLabel { font-size: 12px; letter-spacing: .08em; }
+
+    #latestLapLabel {
+      font-size: 12px;
+      letter-spacing: .08em;
+    }
+
     .latest-lap-value {
-      color: var(--accent-2); font-family: var(--mono); font-variant-numeric: tabular-nums;
-      font-size: clamp(22px, 3.2vh, 30px); font-weight: 800; line-height: 1;
+      color: var(--accent-2);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-size: clamp(22px, 3.2vh, 30px);
+      font-weight: 800;
+      line-height: 1;
     }
-    .latest-lap-value .unit { margin-left: 5px; color: var(--dim); font-size: .5em; }
+
+    .latest-lap-value .unit {
+      margin-left: 5px;
+      color: var(--dim);
+      font-size: .5em;
+    }
+
     @keyframes lapFlash {
-      0% { transform: scale(1); background: rgba(231, 189, 86, 0.06); }
-      35% { transform: scale(1.035); background: rgba(231, 189, 86, 0.22); box-shadow: 0 0 26px rgba(231, 189, 86, .2); }
-      100% { transform: scale(1); background: rgba(231, 189, 86, 0.06); }
+      0% {
+        transform: scale(1);
+        background: rgba(231, 189, 86, 0.06);
+      }
+
+      35% {
+        transform: scale(1.035);
+        background: rgba(231, 189, 86, 0.22);
+        box-shadow: 0 0 26px rgba(231, 189, 86, .2);
+      }
+
+      100% {
+        transform: scale(1);
+        background: rgba(231, 189, 86, 0.06);
+      }
     }
+
     @media (prefers-reduced-motion: no-preference) {
-      .latest-lap.flash { animation: lapFlash .55s ease; }
+      .latest-lap.flash {
+        animation: lapFlash .55s ease;
+      }
     }
 
     /* ---- 通過タイム / 区間ラップ ---- */
     .lap-panel {
-      width: min(100%, 440px); overflow: hidden;
-      border: 1px solid var(--line); border-radius: 9px;
-      background: rgba(255, 255, 255, 0.025); text-align: left;
+      width: min(100%, 440px);
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: rgba(255, 255, 255, 0.025);
+      text-align: left;
     }
-    .lap-head, .lap-row {
-      display: grid; grid-template-columns: 64px minmax(90px, 1fr) minmax(90px, 1fr);
-      align-items: center; column-gap: 10px; padding: 6px 12px;
-    }
-    .lap-head {
-      color: var(--dim); border-bottom: 1px solid var(--line);
-      font-size: 10.5px; letter-spacing: .08em;
-    }
-    #lapRows { max-height: 122px; overflow-y: auto; scrollbar-width: thin; }
+
+    .lap-head,
     .lap-row {
-      min-height: 30px; color: var(--dim); font-size: 12.5px;
+      display: grid;
+      grid-template-columns: 64px minmax(90px, 1fr) minmax(90px, 1fr);
+      align-items: center;
+      column-gap: 10px;
+      padding: 6px 12px;
+    }
+
+    .lap-head {
+      color: var(--dim);
+      border-bottom: 1px solid var(--line);
+      font-size: 10.5px;
+      letter-spacing: .08em;
+    }
+
+    #lapRows {
+      max-height: 122px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+    }
+
+    .lap-row {
+      min-height: 30px;
+      color: var(--dim);
+      font-size: 12.5px;
       border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .lap-row:last-child { border-bottom: 0; }
-    .lap-row.latest { color: var(--text); background: rgba(231, 189, 86, 0.08); }
-    .lap-number { font-weight: 700; }
+
+    .lap-row:last-child {
+      border-bottom: 0;
+    }
+
+    .lap-row.latest {
+      color: var(--text);
+      background: rgba(231, 189, 86, 0.08);
+    }
+
+    .lap-number {
+      font-weight: 700;
+    }
+
     .lap-time {
-      color: var(--text); font-family: var(--mono); font-variant-numeric: tabular-nums;
+      color: var(--text);
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
       text-align: right;
     }
-    .lap-row.latest .lap-time:last-child { color: var(--accent-2); }
-    .lap-empty { padding: 9px 12px; color: var(--dim); font-size: 12px; text-align: center; }
+
+    .lap-row.latest .lap-time:last-child {
+      color: var(--accent-2);
+    }
+
+    .lap-empty {
+      padding: 9px 12px;
+      color: var(--dim);
+      font-size: 12px;
+      text-align: center;
+    }
 
     /* ---- ランキング登録パネル(カメラの代わり) ---- */
     .register-panel {
-      min-width: 0; border: 1px solid var(--line); border-radius: 12px;
-      background: rgba(0, 0, 0, 0.28); overflow: hidden;
+      min-width: 0;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: rgba(0, 0, 0, 0.28);
+      overflow: hidden;
       box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
-      display: grid; grid-template-rows: auto 1fr auto;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
       max-height: min(78vh, 620px);
     }
+
     .register-head {
-      display: flex; justify-content: space-between; align-items: center;
-      gap: 10px; padding: 9px 12px; color: var(--dim); font-size: 12px;
-      border-bottom: 1px solid var(--line); letter-spacing: .08em;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      padding: 9px 12px;
+      color: var(--dim);
+      font-size: 12px;
+      border-bottom: 1px solid var(--line);
+      letter-spacing: .08em;
     }
-    .register-body { padding: 14px 12px; display: grid; gap: 10px; align-content: start; overflow-y: auto; }
-    .register-body label { color: var(--dim); font-size: 12px; display: grid; gap: 5px; }
+
+    .register-body {
+      padding: 14px 12px;
+      display: grid;
+      gap: 10px;
+      align-content: start;
+      overflow-y: auto;
+    }
+
+    .register-body label {
+      color: var(--dim);
+      font-size: 12px;
+      display: grid;
+      gap: 5px;
+    }
+
     .register-body input {
-      background: rgba(255, 255, 255, 0.04); color: var(--text);
-      border: 1px solid var(--line); border-radius: 8px;
-      padding: 11px 12px; font-size: 16px; width: 100%;
+      background: rgba(255, 255, 255, 0.04);
+      color: var(--text);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 11px 12px;
+      font-size: 16px;
+      width: 100%;
     }
-    #scoreInput { font-family: var(--mono); font-variant-numeric: tabular-nums; }
+
+    #scoreInput {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+    }
+
     #registerBtn {
-      padding: 13px 10px; font-size: 16px; font-weight: 700;
-      background: var(--accent); color: #221a08;
-      border: none; border-radius: 8px; cursor: pointer;
+      padding: 13px 10px;
+      font-size: 16px;
+      font-weight: 700;
+      background: var(--accent);
+      color: #221a08;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
     }
-    #registerBtn:disabled { opacity: 0.4; cursor: not-allowed; }
-    #registerMsg { min-height: 18px; color: var(--ok); font-size: 12.5px; text-align: center; }
-    .recent-title { color: var(--dim); font-size: 11px; letter-spacing: .08em; margin-top: 4px; }
-    .recent { list-style: none; padding: 0; margin: 0; font-size: 13.5px; }
+
+    #registerBtn:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
+
+    #registerMsg {
+      min-height: 18px;
+      color: var(--ok);
+      font-size: 12.5px;
+      text-align: center;
+    }
+
+    .recent-title {
+      color: var(--dim);
+      font-size: 11px;
+      letter-spacing: .08em;
+      margin-top: 4px;
+    }
+
+    .recent {
+      list-style: none;
+      padding: 0;
+      margin: 0;
+      font-size: 13.5px;
+    }
+
     .recent li {
-      display: flex; justify-content: space-between; gap: 10px;
-      padding: 6px 2px; border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+      display: flex;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 6px 2px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
-    .recent li:last-child { border-bottom: 0; }
-    .recent .t { font-family: var(--mono); color: var(--accent-2); white-space: nowrap; }
-    .register-foot { padding: 10px 12px; border-top: 1px solid var(--line); }
+
+    .recent li:last-child {
+      border-bottom: 0;
+    }
+
+    .recent .t {
+      font-family: var(--mono);
+      color: var(--accent-2);
+      white-space: nowrap;
+    }
+
+    .register-foot {
+      padding: 10px 12px;
+      border-top: 1px solid var(--line);
+    }
+
     #openRanking {
-      width: 100%; padding: 9px 10px; font-size: 13px;
-      color: var(--text); background: rgba(255, 255, 255, 0.06);
-      border: 1px solid var(--line); border-radius: 8px; cursor: pointer;
+      width: 100%;
+      padding: 9px 10px;
+      font-size: 13px;
+      color: var(--text);
+      background: rgba(255, 255, 255, 0.06);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      cursor: pointer;
     }
 
     @media (max-width: 900px) {
-      main { grid-template-columns: minmax(0, 1fr) minmax(260px, 38vw); gap: 14px; padding-inline: 16px; }
-      #bigTime { font-size: min(16vw, 34vh); }
+      main {
+        grid-template-columns: minmax(0, 1fr) minmax(260px, 38vw);
+        gap: 14px;
+        padding-inline: 16px;
+      }
+
+      #bigTime {
+        font-size: min(16vw, 34vh);
+      }
     }
 
     /* ---- 下部: 操作バー ---- */
     footer {
-      display: flex; justify-content: center; align-items: center;
-      gap: 12px; padding: 14px 20px 20px;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 20px 20px;
     }
+
     button {
-      background: var(--accent); color: #221a08;
-      border: none; border-radius: 8px; cursor: pointer;
-      padding: 9px 18px; font-size: 14px; font-weight: 700;
+      background: var(--accent);
+      color: #221a08;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      padding: 9px 18px;
+      font-size: 14px;
+      font-weight: 700;
       font-family: inherit;
     }
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
-    #measureBtn { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
 
-    #unsupported {
-      display: none; color: var(--err); border: 1px solid var(--err);
-      border-radius: 8px; padding: 10px 14px; margin: 10px 20px 0; font-size: 14px;
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
     }
 
-    :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
+    #measureBtn {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--line);
+      font-weight: 500;
+    }
+
+    #unsupported {
+      display: none;
+      color: var(--err);
+      border: 1px solid var(--err);
+      border-radius: 8px;
+      padding: 10px 14px;
+      margin: 10px 20px 0;
+      font-size: 14px;
+    }
+
+    :focus-visible {
+      outline: 2px solid var(--accent-2);
+      outline-offset: 2px;
+    }
   </style>
 </head>
 
@@ -253,9 +550,9 @@
       <span id="state" class="state">未接続</span>
       <div class="settings">
         <label>モード<select id="modeSelect">
-          <option value="pro-agility-2_5" selected>2.5m-2.5m</option>
-          <option value="pro-agility-5">5m-5m</option>
-        </select></label>
+            <option value="pro-agility-2_5" selected>2.5m-2.5m</option>
+            <option value="pro-agility-5">5m-5m</option>
+          </select></label>
         <label>テスト名<input type="text" id="testName" value="Proagility2"></label>
         <label>完了回数<input type="number" id="finishCount" value="4" min="1" max="20" step="1"></label>
       </div>
@@ -597,8 +894,9 @@
         currentRun = [];
         render();
       } catch (error) {
-        log('Firebase登録エラー: ' + error.message);
-        showRegisterMsg('登録できませんでした。ネット接続を確認してください');
+        const errorCode = error.code || error.name || 'unknown';
+        log(`Firebase登録エラー [${errorCode}]: ${error.message}`);
+        showRegisterMsg(`登録できませんでした (${errorCode})`);
       } finally {
         updateRegisterEnabled();
       }
@@ -634,8 +932,9 @@
     });
 
     window.addEventListener('ranking-store-error', (event) => {
-      log('Firebase接続エラー: ' + (event.detail?.message || event.detail));
-      showRegisterMsg('オフラインのためローカル保存で動作します');
+      const errorCode = event.detail?.code || event.detail?.name || 'unknown';
+      log(`Firebase接続エラー [${errorCode}]: ` + (event.detail?.message || event.detail));
+      showRegisterMsg(`Firebase接続エラー (${errorCode}) — ローカル保存で動作します`);
     });
 
     window.addEventListener('beforeunload', () => {

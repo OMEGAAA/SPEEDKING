@@ -19,7 +19,9 @@
       --mono: "Consolas", "Cascadia Mono", monospace;
     }
 
-    * { box-sizing: border-box; }
+    * {
+      box-sizing: border-box;
+    }
 
     body {
       margin: 0;
@@ -37,7 +39,11 @@
       color: var(--accent);
     }
 
-    .sub { color: var(--text-dim); font-size: 13px; margin: 0 0 20px; }
+    .sub {
+      color: var(--text-dim);
+      font-size: 13px;
+      margin: 0 0 20px;
+    }
 
     .panel {
       background: var(--panel);
@@ -47,13 +53,26 @@
       margin-bottom: 16px;
     }
 
-    .panel h2 { font-size: 14px; margin: 0 0 10px; color: var(--accent); }
+    .panel h2 {
+      font-size: 14px;
+      margin: 0 0 10px;
+      color: var(--accent);
+    }
 
-    .row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; }
+    .row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+    }
 
-    label { font-size: 13px; color: var(--text-dim); }
+    label {
+      font-size: 13px;
+      color: var(--text-dim);
+    }
 
-    select, input[type="text"] {
+    select,
+    input[type="text"] {
       background: #0b0e11;
       color: var(--text);
       border: 1px solid var(--line);
@@ -81,7 +100,10 @@
       font-weight: 400;
     }
 
-    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    button:disabled {
+      opacity: 0.4;
+      cursor: not-allowed;
+    }
 
     #status {
       font-size: 13px;
@@ -91,8 +113,15 @@
       color: var(--text-dim);
     }
 
-    #status.connected { color: var(--ok); border-color: var(--ok); }
-    #status.error { color: var(--err); border-color: var(--err); }
+    #status.connected {
+      color: var(--ok);
+      border-color: var(--ok);
+    }
+
+    #status.error {
+      color: var(--err);
+      border-color: var(--err);
+    }
 
     #log {
       font-family: var(--mono);
@@ -108,15 +137,39 @@
       word-break: break-all;
     }
 
-    #log .t { color: var(--text-dim); }
-    #log .hex { color: var(--accent); }
-    #log .ascii { color: #7dd3fc; }
-    #log .info { color: var(--text-dim); font-style: italic; }
-    #log .error { color: var(--err); }
+    #log .t {
+      color: var(--text-dim);
+    }
 
-    .stats { font-size: 13px; color: var(--text-dim); margin-top: 8px; }
+    #log .hex {
+      color: var(--accent);
+    }
 
-    ol { font-size: 14px; line-height: 1.9; padding-left: 22px; margin: 0; }
+    #log .ascii {
+      color: #7dd3fc;
+    }
+
+    #log .info {
+      color: var(--text-dim);
+      font-style: italic;
+    }
+
+    #log .error {
+      color: var(--err);
+    }
+
+    .stats {
+      font-size: 13px;
+      color: var(--text-dim);
+      margin-top: 8px;
+    }
+
+    ol {
+      font-size: 14px;
+      line-height: 1.9;
+      padding-left: 22px;
+      margin: 0;
+    }
 
     code {
       font-family: var(--mono);

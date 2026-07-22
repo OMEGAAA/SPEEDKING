@@ -35,6 +35,7 @@ async function initializeRankingStore() {
     doc,
     getDoc,
     getFirestore,
+    initializeFirestore,
     onSnapshot,
     orderBy,
     query,
@@ -47,7 +48,11 @@ async function initializeRankingStore() {
   const userCredential = await signInAnonymously(auth);
   const ownerUid = userCredential.user.uid;
 
-  const db = getFirestore(app);
+  // Electron の file:// では WebChannel がプロキシ等に阻害される場合があるため、
+  // EXE版だけ互換性の高いロングポーリングを強制する。
+  const db = location.protocol === 'file:'
+    ? initializeFirestore(app, { experimentalForceLongPolling: true })
+    : getFirestore(app);
   const entriesCollection = collection(db, 'rankingEntries');
   const entriesQuery = query(entriesCollection, orderBy('createdAt', 'asc'));
 
