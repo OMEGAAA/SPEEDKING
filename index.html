@@ -4,2323 +4,924 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>プロアジリティ</title>
-  <script>
-    (() => {
-      try {
-        const savedTheme = localStorage.getItem('ranking-app-theme');
-        const theme = savedTheme || (window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark');
-        document.documentElement.dataset.theme = theme === 'light' ? 'light' : 'dark';
-      } catch (e) {
-        document.documentElement.dataset.theme = 'dark';
-      }
-    })();
-  </script>
+  <title>プロアジリティタイマー</title>
   <style>
     :root {
       color-scheme: dark;
-      --bg: #090b0d;
-      --bg-soft: #101419;
-      --panel: rgba(18, 21, 24, 0.92);
-      --panel-strong: rgba(25, 28, 31, 0.96);
-      --panel-border: rgba(219, 180, 83, 0.28);
-      --line: rgba(255, 255, 255, 0.1);
+      --bg: #07090c;
+      --line: rgba(255, 255, 255, 0.12);
       --text: #f7f3ea;
-      --text-dim: #9ca3af;
-      --text-muted: #6b7280;
+      --dim: #8b93a1;
       --accent: #e7bd56;
       --accent-2: #ffdf85;
-      --accent-dark: #9f6b18;
-      --gold: #f0c45b;
-      --silver: #c7cbd1;
-      --bronze: #b8753c;
-      --danger: #ff6b6b;
-      --shadow: 0 24px 70px rgba(0, 0, 0, 0.45);
-      --body-bg:
-        radial-gradient(circle at 50% -8%, rgba(231, 189, 86, 0.18), transparent 34%),
-        radial-gradient(circle at 8% 18%, rgba(231, 189, 86, 0.08), transparent 26%),
-        linear-gradient(160deg, #070809 0%, #12161a 52%, #080a0c 100%);
-      --pattern-bg:
-        linear-gradient(120deg, transparent 0 45%, rgba(231, 189, 86, 0.06) 46%, transparent 47% 100%),
-        linear-gradient(60deg, transparent 0 48%, rgba(255, 255, 255, 0.035) 49%, transparent 50% 100%);
-      --nav-bg: rgba(13, 16, 19, 0.9);
-      --nav-border: rgba(255, 255, 255, 0.1);
-      --nav-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.04), rgba(255, 255, 255, 0.01));
-      --nav-active-bg:
-        linear-gradient(180deg, rgba(255, 223, 133, 0.18), rgba(231, 189, 86, 0.06)),
-        rgba(18, 21, 24, 0.96);
-      --card-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.055), rgba(255, 255, 255, 0.018));
-      --card-sheen:
-        radial-gradient(circle at 50% 0%, rgba(231, 189, 86, 0.12), transparent 32%),
-        linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.04), transparent);
-      --subtle-surface: rgba(0, 0, 0, 0.2);
-      --control-surface: rgba(8, 10, 12, 0.72);
-      --control-surface-focus: rgba(8, 10, 12, 0.9);
-      --placeholder: rgba(247, 243, 234, 0.34);
-      --title-shadow: 0 2px 0 #6d4a15, 0 16px 34px rgba(231, 189, 86, 0.28);
-      --title-shadow-strong: 0 2px 0 #6d4a15, 0 16px 46px rgba(255, 223, 133, 0.5);
-      --display-text: #ffffff;
-      --display-shadow: 0 12px 28px rgba(0, 0, 0, 0.55);
-      --score-shadow: 0 2px 0 #6d4a15;
-      --focus-ring: rgba(255, 223, 133, 0.72);
+      --ok: #4ade80;
+      --warn: #fbbf24;
+      --err: #ff6b6b;
+      --mono: "Cascadia Mono", "Consolas", monospace;
+      --serif: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
     }
 
-    html[data-theme="light"] {
-      color-scheme: light;
-      --bg: #f7f1e4;
-      --bg-soft: #fff9ed;
-      --panel: rgba(255, 252, 245, 0.94);
-      --panel-strong: rgba(255, 250, 238, 0.98);
-      --panel-border: rgba(151, 101, 24, 0.28);
-      --line: rgba(83, 64, 31, 0.14);
-      --text: #241a0b;
-      --text-dim: #5f533f;
-      --text-muted: #7b6d56;
-      --accent: #98620d;
-      --accent-2: #684106;
-      --accent-dark: #70470d;
-      --gold: #b7791f;
-      --silver: #59606b;
-      --bronze: #8d5429;
-      --danger: #b42318;
-      --shadow: 0 20px 54px rgba(83, 58, 20, 0.18);
-      --body-bg:
-        radial-gradient(circle at 50% -8%, rgba(231, 189, 86, 0.28), transparent 34%),
-        radial-gradient(circle at 8% 18%, rgba(151, 101, 24, 0.12), transparent 26%),
-        linear-gradient(160deg, #fff8e8 0%, #f6eddc 52%, #fffdf8 100%);
-      --pattern-bg:
-        linear-gradient(120deg, transparent 0 45%, rgba(151, 101, 24, 0.07) 46%, transparent 47% 100%),
-        linear-gradient(60deg, transparent 0 48%, rgba(255, 255, 255, 0.32) 49%, transparent 50% 100%);
-      --nav-bg: rgba(255, 252, 245, 0.9);
-      --nav-border: rgba(83, 64, 31, 0.14);
-      --nav-button-bg: linear-gradient(180deg, rgba(255, 255, 255, 0.88), rgba(251, 241, 220, 0.72));
-      --nav-active-bg:
-        linear-gradient(180deg, rgba(231, 189, 86, 0.28), rgba(151, 101, 24, 0.1)),
-        rgba(255, 252, 245, 0.98);
-      --card-overlay: linear-gradient(180deg, rgba(255, 255, 255, 0.78), rgba(255, 248, 235, 0.35));
-      --card-sheen:
-        radial-gradient(circle at 50% 0%, rgba(151, 101, 24, 0.1), transparent 32%),
-        linear-gradient(90deg, transparent, rgba(151, 101, 24, 0.05), transparent);
-      --subtle-surface: rgba(151, 101, 24, 0.07);
-      --control-surface: rgba(255, 255, 255, 0.78);
-      --control-surface-focus: rgba(255, 255, 255, 0.96);
-      --placeholder: rgba(36, 26, 11, 0.44);
-      --title-shadow: 0 1px 0 rgba(255, 255, 255, 0.8), 0 12px 24px rgba(151, 101, 24, 0.16);
-      --title-shadow-strong: 0 1px 0 rgba(255, 255, 255, 0.9), 0 16px 30px rgba(151, 101, 24, 0.22);
-      --display-text: #241a0b;
-      --display-shadow: 0 12px 24px rgba(151, 101, 24, 0.18);
-      --score-shadow: 0 1px 0 rgba(255, 255, 255, 0.86);
-      --focus-ring: rgba(151, 101, 24, 0.45);
-    }
+    * { box-sizing: border-box; }
 
-    * {
-      box-sizing: border-box;
-    }
-
-    html {
-      background: var(--bg);
-    }
+    html, body { height: 100%; }
 
     body {
       margin: 0;
-      min-height: 100vh;
-      overflow-x: hidden;
-      font-family: "Hiragino Sans", "Yu Gothic", "Yu Gothic UI", "Segoe UI", sans-serif;
-      background: var(--body-bg);
+      background:
+        radial-gradient(120% 90% at 50% 30%, #10141b 0%, var(--bg) 62%);
       color: var(--text);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 14px 14px 40px;
+      font-family: "Segoe UI", "Hiragino Sans", "Yu Gothic UI", sans-serif;
+      display: grid;
+      grid-template-rows: auto 1fr auto;
+      overflow: hidden;
     }
 
-    body::before {
-      content: "";
-      position: fixed;
-      inset: 0;
-      pointer-events: none;
-      background-image: var(--pattern-bg);
-      background-size: 180px 180px, 240px 240px;
-      opacity: 0.35;
-      animation: bgDrift 24s linear infinite;
-    }
-
-    .app {
-      position: relative;
-      z-index: 1;
-      width: 100%;
-      max-width: 1380px;
-      animation: appIntro 0.6s ease both;
-    }
-
+    /* ---- 上部バー ---- */
     header {
-      text-align: center;
-      margin-bottom: 12px;
-      padding-top: 0;
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 12px; padding: 14px 20px;
     }
-
-    .eyebrow {
-      color: var(--accent);
-      font-size: 11px;
-      font-weight: 800;
-      letter-spacing: 0.2em;
-      margin-bottom: 8px;
-      text-transform: uppercase;
-    }
-
-    header h1 {
+    .event-title {
+      font-family: var(--serif);
       color: var(--accent-2);
-      font-family: Georgia, "Times New Roman", "Yu Mincho", "Hiragino Mincho ProN", serif;
-      font-size: clamp(30px, 7vw, 46px);
-      font-weight: 700;
-      letter-spacing: 0.08em;
+      font-size: 17px; letter-spacing: .14em;
+    }
+    .top-right { display: flex; align-items: center; gap: 10px; }
+    .state {
+      font-size: 12.5px; padding: 5px 12px; border-radius: 999px;
+      border: 1px solid var(--line); color: var(--dim); white-space: nowrap;
+    }
+    .state.online { color: var(--ok); border-color: var(--ok); }
+    .state.arming { color: var(--warn); border-color: var(--warn); }
+    .state.err { color: var(--err); border-color: var(--err); }
+    .settings { display: flex; gap: 10px; align-items: center; }
+    .settings label { color: var(--dim); font-size: 11.5px; display: flex; align-items: center; gap: 5px; }
+    .settings input {
+      background: rgba(255, 255, 255, 0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px;
+      padding: 4px 8px; font-size: 12.5px;
+    }
+    .settings input#testName { width: 110px; }
+    .settings input#finishCount { width: 48px; }
+    .settings select {
+      background: rgba(255, 255, 255, 0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 6px;
+      padding: 4px 8px; font-size: 12.5px; font-family: inherit;
+    }
+    .settings select option { background: #14181c; }
+    #cameraVisibilityBtn {
+      padding: 5px 10px; border: 1px solid var(--line); border-radius: 7px;
+      background: rgba(255, 255, 255, 0.05); color: var(--text);
+      font-size: 12px; font-weight: 700; white-space: nowrap;
+    }
+    #cameraVisibilityBtn:hover { border-color: var(--accent); }
+
+    /* ---- 中央: タイム ---- */
+    main {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(320px, 34vw);
+      align-items: center;
+      gap: clamp(18px, 3vw, 42px);
+      width: 100%; min-height: 0; padding: 0 clamp(16px, 3vw, 44px);
+    }
+    main.camera-hidden { grid-template-columns: minmax(0, 1fr); }
+    main.camera-hidden .timer-panel { width: min(100%, 1000px); justify-self: center; }
+    main.camera-hidden #bigTime { font-size: min(23vw, 42vh); }
+    .timer-panel {
+      display: grid; place-content: center; justify-items: center;
+      gap: clamp(8px, 2vh, 22px); min-width: 0; text-align: center;
+    }
+    #bigTime {
+      font-family: var(--mono);
+      font-variant-numeric: tabular-nums;
+      font-weight: 800;
+      font-size: min(17vw, 38vh);
       line-height: 1;
-      margin: 0;
-      text-shadow: var(--title-shadow);
-      animation: titleGlow 3.8s ease-in-out infinite;
-    }
-
-    header p {
-      margin: 8px auto 0;
-      max-width: 26em;
-      color: var(--text-dim);
-      font-size: 13px;
-      line-height: 1.45;
-    }
-
-    .theme-switch {
-      display: inline-grid;
-      grid-template-columns: repeat(2, minmax(82px, auto));
-      gap: 3px;
-      margin-top: 12px;
-      padding: 3px;
-      border: 1px solid var(--panel-border);
-      border-radius: 999px;
-      background: var(--nav-bg);
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-    }
-
-    .theme-option {
-      min-height: 34px;
-      border: none;
-      border-radius: 999px;
-      background: transparent;
-      color: var(--text-dim);
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: background 0.18s ease, color 0.18s ease, transform 0.18s ease;
-    }
-
-    .theme-option.active {
-      background: var(--nav-active-bg);
-      color: var(--accent-2);
-      box-shadow: inset 0 0 0 1px var(--panel-border);
-    }
-
-    .theme-option:hover,
-    .theme-option:focus-visible {
+      letter-spacing: .01em;
       color: var(--text);
-      outline: 2px solid var(--focus-ring);
-      outline-offset: 2px;
+      transition: color .25s ease;
     }
-
-    nav {
-      z-index: 10;
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 0;
-      background: var(--nav-bg);
-      border: 1px solid var(--nav-border);
-      border-radius: 8px;
-      box-shadow: var(--shadow);
-      margin-bottom: 12px;
-      overflow: hidden;
-      backdrop-filter: blur(18px);
+    #bigTime .unit {
+      font-size: .28em; color: var(--dim); font-weight: 600; margin-left: .12em;
     }
-
-    nav button {
-      min-height: 48px;
-      border: none;
-      border-right: 1px solid var(--nav-border);
-      background: var(--nav-button-bg);
-      color: var(--text-dim);
-      font-size: 15px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: background 0.2s ease, color 0.2s ease, box-shadow 0.2s ease;
-    }
-
-    nav button:last-child {
-      border-right: none;
-    }
-
-    @media (max-width: 560px) {
-      nav button {
-        font-size: 12px;
-        letter-spacing: 0;
-        padding-inline: 2px;
-      }
-    }
-
-    nav button.active {
-      background: var(--nav-active-bg);
-      color: var(--accent-2);
-      box-shadow: inset 0 -3px 0 var(--accent);
-      animation: activeTabPulse 2.8s ease-in-out infinite;
-    }
-
-    nav button:hover {
-      color: var(--text);
-    }
-
-    nav button:focus-visible {
-      color: var(--text);
-      outline: 2px solid var(--focus-ring);
-      outline-offset: -4px;
-    }
-
-    .screen {
-      display: none;
-    }
-
-    .screen.active {
-      display: block;
-      animation: liftIn 0.28s ease;
-    }
-
-    @keyframes appIntro {
-      from {
-        opacity: 0;
-        transform: translateY(14px) scale(0.985);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    @keyframes liftIn {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes bgDrift {
-      from {
-        background-position: 0 0, 0 0;
-      }
-
-      to {
-        background-position: 180px 180px, -240px 240px;
-      }
-    }
-
-    @keyframes titleGlow {
-
-      0%,
-      100% {
-        text-shadow: var(--title-shadow);
-      }
-
-      50% {
-        text-shadow: var(--title-shadow-strong);
-      }
-    }
-
-    @keyframes activeTabPulse {
-
-      0%,
-      100% {
-        box-shadow: inset 0 -3px 0 var(--accent), inset 0 0 0 rgba(231, 189, 86, 0);
-      }
-
-      50% {
-        box-shadow: inset 0 -3px 0 var(--accent), inset 0 0 28px rgba(231, 189, 86, 0.14);
-      }
-    }
-
-    .card {
-      position: relative;
-      background:
-        var(--card-overlay),
-        var(--panel);
-      border: 1px solid var(--panel-border);
-      border-radius: 8px;
-      box-shadow: var(--shadow), inset 0 1px 0 var(--line);
-      overflow: hidden;
-    }
-
-    .card::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      pointer-events: none;
-      background: var(--card-sheen);
-      animation: cardSheen 5.8s ease-in-out infinite;
-    }
-
-    .card-content {
-      position: relative;
-      padding: 12px;
-    }
-
-    .stats {
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      gap: 8px;
-      margin-bottom: 10px;
-    }
-
-    .stat {
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background:
-        var(--card-overlay),
-        var(--subtle-surface);
-      padding: 10px 8px;
-      text-align: center;
-      animation: statPop 0.45s ease both;
-    }
-
-    .stat:nth-child(2) {
-      animation-delay: 0.07s;
-    }
-
-    .stat:nth-child(3) {
-      animation-delay: 0.14s;
-    }
-
-    .stat-label {
-      display: block;
-      color: var(--text-muted);
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 0.12em;
-      margin-bottom: 5px;
-    }
-
-    .stat-value {
-      color: var(--text);
-      font-size: 16px;
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-    }
-
-    .champion {
-      display: none;
-      position: relative;
-      min-height: 152px;
-      margin-bottom: 10px;
-      padding: 14px 16px 12px;
-      border: 1px solid rgba(231, 189, 86, 0.36);
-      border-radius: 8px;
-      background:
-        radial-gradient(circle at 50% 18%, rgba(231, 189, 86, 0.2), transparent 30%),
-        linear-gradient(135deg, rgba(231, 189, 86, 0.12), transparent 36%),
-        var(--subtle-surface);
-      text-align: center;
-      overflow: hidden;
-    }
-
-    .champion.show {
-      display: block;
-      animation: championRise 0.5s cubic-bezier(0.2, 0.85, 0.28, 1.15) both, championAura 4s ease-in-out 0.5s infinite;
-    }
-
-    .sync-status {
-      display: inline-flex;
-      align-items: center;
-      gap: 7px;
-      min-height: 28px;
-      margin-top: 14px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: var(--subtle-surface);
-      color: var(--text-dim);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      padding: 0 11px;
-    }
-
-    .sync-status::before {
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: #d9a93f;
-      content: "";
-      box-shadow: 0 0 9px rgba(217, 169, 63, 0.65);
-    }
-
-    .sync-status.online::before {
-      background: #42d392;
-      box-shadow: 0 0 9px rgba(66, 211, 146, 0.7);
-    }
-
-    .sync-status.local::before,
-    .sync-status.error::before {
-      background: #ff6b6b;
-      box-shadow: 0 0 9px rgba(255, 107, 107, 0.6);
-    }
-
-    .champion-badge {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 24px;
-      margin-bottom: 6px;
-      border: 1px solid rgba(231, 189, 86, 0.42);
-      border-radius: 999px;
-      background: rgba(231, 189, 86, 0.1);
-      color: var(--accent-2);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.18em;
-      padding: 0 13px;
-      animation: badgeGlow 2.7s ease-in-out infinite;
-    }
-
-    .champion-rank {
-      color: var(--accent-2);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 44px;
-      line-height: 0.9;
-      text-shadow: var(--title-shadow);
-    }
-
-    .champion-name {
-      margin-top: 6px;
-      color: var(--display-text);
-      font-size: clamp(26px, 6vw, 34px);
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      line-height: 1.2;
-      overflow-wrap: anywhere;
-      text-shadow: var(--display-shadow);
-    }
-
-    .champion-score-label {
-      margin-top: 7px;
+    #bigTime.waiting { color: var(--dim); }
+    #bigTime.final {
       color: var(--accent);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.16em;
+      text-shadow: 0 0 60px rgba(231, 189, 86, 0.35);
+    }
+    @keyframes lockPulse {
+      0% { transform: scale(1); }
+      35% { transform: scale(1.045); }
+      100% { transform: scale(1); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      #bigTime.final { animation: lockPulse .5s ease; }
     }
 
-    .champion-score {
-      display: inline-flex;
-      align-items: baseline;
-      justify-content: center;
-      gap: 0.12em;
-      margin-top: 2px;
-      color: var(--accent-2);
-      /* Georgiaの数字はオールドスタイル（3,4,5,7,9がベースライン下に沈む）ため、
-         数字の高さが揃うTimes New Romanを優先する */
-      font-family: "Times New Roman", Georgia, serif;
-      font-size: clamp(34px, 7vw, 44px);
-      font-weight: 700;
-      line-height: 1;
-      font-variant-numeric: tabular-nums;
-      text-shadow: var(--score-shadow);
-      animation: scorePop 0.5s ease 0.12s both;
+    /* 光電管ゲートインジケータ: 横切り1回 = ビーム1本が点灯 */
+    #gates { display: flex; gap: clamp(10px, 2vw, 22px); }
+    #gates .gate {
+      width: clamp(6px, 1vw, 10px);
+      height: clamp(26px, 6vh, 52px);
+      border-radius: 3px;
+      background: rgba(255, 255, 255, 0.10);
+      transition: background .2s ease, box-shadow .2s ease;
+    }
+    #gates .gate.lit {
+      background: var(--accent);
+      box-shadow: 0 0 14px rgba(231, 189, 86, 0.55);
+    }
+    #phase { font-size: clamp(14px, 2.4vh, 20px); color: var(--dim); letter-spacing: .12em; }
+    #phase.final { color: var(--accent-2); }
+
+    .latest-lap {
+      display: flex; justify-content: space-between; align-items: baseline;
+      width: min(100%, 440px); min-height: 48px; padding: 7px 14px;
+      border: 1px solid rgba(231, 189, 86, 0.35); border-radius: 9px;
+      background: rgba(231, 189, 86, 0.06); color: var(--dim);
+    }
+    #latestLapLabel { font-size: 12px; letter-spacing: .08em; }
+    .latest-lap-value {
+      color: var(--accent-2); font-family: var(--mono); font-variant-numeric: tabular-nums;
+      font-size: clamp(22px, 3.2vh, 30px); font-weight: 800; line-height: 1;
+    }
+    .latest-lap-value .unit { margin-left: 5px; color: var(--dim); font-size: .5em; }
+    @keyframes lapFlash {
+      0% { transform: scale(1); background: rgba(231, 189, 86, 0.06); }
+      35% { transform: scale(1.035); background: rgba(231, 189, 86, 0.22); box-shadow: 0 0 26px rgba(231, 189, 86, .2); }
+      100% { transform: scale(1); background: rgba(231, 189, 86, 0.06); }
+    }
+    @media (prefers-reduced-motion: no-preference) {
+      .latest-lap.flash { animation: lapFlash .55s ease; }
     }
 
-    .champion-score-unit {
-      color: var(--accent);
-      font-family: "Hiragino Sans", "Yu Gothic", "Yu Gothic UI", "Segoe UI", sans-serif;
-      font-size: 0.34em;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      text-shadow: none;
+    /* ---- 通過タイム / 区間ラップ ---- */
+    .lap-panel {
+      width: min(100%, 440px); overflow: hidden;
+      border: 1px solid var(--line); border-radius: 9px;
+      background: rgba(255, 255, 255, 0.025); text-align: left;
     }
-
-    .champion-delete {
-      position: absolute;
-      top: 12px;
-      right: 12px;
-      border: 1px solid var(--line);
-      border-radius: 999px;
-      background: var(--subtle-surface);
-      color: var(--text-dim);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.06em;
-      padding: 8px 11px;
-      cursor: pointer;
-      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    .lap-head, .lap-row {
+      display: grid; grid-template-columns: 64px minmax(90px, 1fr) minmax(90px, 1fr);
+      align-items: center; column-gap: 10px; padding: 6px 12px;
     }
-
-    .champion-delete:hover,
-    .champion-delete:focus-visible {
-      border-color: rgba(255, 107, 107, 0.55);
-      background: rgba(255, 107, 107, 0.12);
-      color: var(--danger);
-      outline: none;
+    .lap-head {
+      color: var(--dim); border-bottom: 1px solid var(--line);
+      font-size: 10.5px; letter-spacing: .08em;
     }
-
-    .rank-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      gap: 0;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
+    #lapRows { max-height: 122px; overflow-y: auto; scrollbar-width: thin; }
+    .lap-row {
+      min-height: 30px; color: var(--dim); font-size: 12.5px;
+      border-bottom: 1px solid rgba(255, 255, 255, 0.06);
     }
-
-    .rank-list:empty {
-      display: none;
-    }
-
-    .more-ranks-btn {
-      display: none;
-      justify-self: end;
-      margin-top: 10px;
-      border: 1px solid rgba(231, 189, 86, 0.34);
-      border-radius: 999px;
-      background: var(--subtle-surface);
-      color: var(--accent-2);
-      font-size: 12px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      padding: 8px 13px;
-      cursor: pointer;
-      transition: border-color 0.18s ease, background 0.18s ease, transform 0.18s ease;
-    }
-
-    .more-ranks-btn.show {
-      display: inline-flex;
-      align-items: center;
-      justify-content: center;
-    }
-
-    .more-ranks-btn:hover,
-    .more-ranks-btn:focus-visible {
-      border-color: rgba(255, 223, 133, 0.72);
-      background: rgba(231, 189, 86, 0.12);
-      transform: translateY(-1px);
-      outline: none;
-    }
-
-    .rank-item {
-      display: grid;
-      grid-template-columns: 76px minmax(0, 1fr) minmax(134px, auto) 54px;
-      align-items: center;
-      min-height: 86px;
-      gap: 12px;
-      background:
-        var(--card-overlay),
-        var(--panel-strong);
-      border-bottom: 1px solid var(--line);
-      padding: 0 10px 0 0;
-      animation: rowSlideIn 0.42s ease both;
-      animation-delay: calc(var(--rank-index, 0) * 55ms);
-      transition: background 0.18s ease, transform 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .rank-item:last-child {
-      border-bottom: none;
-    }
-
-    .rank-item:hover {
-      background:
-        linear-gradient(90deg, rgba(231, 189, 86, 0.08), rgba(255, 255, 255, 0.025)),
-        var(--panel-strong);
-      box-shadow: inset 3px 0 0 rgba(231, 189, 86, 0.72);
-      transform: translateX(3px);
-    }
-
-    .rank-item:focus-within {
-      box-shadow: inset 3px 0 0 rgba(255, 223, 133, 0.9);
-    }
-
-    .rank-no {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      align-self: stretch;
-      color: var(--text-dim);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 38px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      background: var(--subtle-surface);
-      text-shadow: var(--display-shadow);
-    }
-
-    .rank-item.rank-2 .rank-no {
-      color: #fff0aa;
-      background: linear-gradient(180deg, #d8a836, #5f4212);
-      animation: ribbonGlow 3.2s ease-in-out infinite;
-    }
-
-    .rank-item.rank-3 .rank-no {
-      color: #f6f8fb;
-      background: linear-gradient(180deg, #b9bec6, #454a52);
-    }
-
-    .rank-name {
-      min-width: 0;
-      color: var(--display-text);
-      font-size: 21px;
-      font-weight: 900;
-      letter-spacing: 0.03em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-    }
-
-    .rank-score {
-      color: var(--display-text);
-      font-size: 26px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      font-variant-numeric: tabular-nums;
+    .lap-row:last-child { border-bottom: 0; }
+    .lap-row.latest { color: var(--text); background: rgba(231, 189, 86, 0.08); }
+    .lap-number { font-weight: 700; }
+    .lap-time {
+      color: var(--text); font-family: var(--mono); font-variant-numeric: tabular-nums;
       text-align: right;
-      text-shadow: var(--display-shadow);
     }
+    .lap-row.latest .lap-time:last-child { color: var(--accent-2); }
+    .lap-empty { padding: 9px 12px; color: var(--dim); font-size: 12px; text-align: center; }
 
-    .del-btn {
-      width: 42px;
-      height: 42px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--subtle-surface);
-      color: var(--text-dim);
-      font-size: 11px;
-      font-weight: 800;
-      cursor: pointer;
-      transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    /* ---- Webカメラ / リプレイ ---- */
+    .camera-panel {
+      min-width: 0; border: 1px solid var(--line); border-radius: 12px;
+      background: rgba(0, 0, 0, 0.28); overflow: hidden;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.24);
     }
-
-    .del-btn:hover,
-    .del-btn:focus-visible {
-      border-color: rgba(255, 107, 107, 0.55);
-      background: rgba(255, 107, 107, 0.12);
-      color: var(--danger);
-      outline: none;
-    }
-
-    .entry-order-list {
-      list-style: none;
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      overflow: hidden;
-    }
-
-    .entry-order-list:empty {
-      display: none;
-    }
-
-    .entry-order-item {
-      display: grid;
-      grid-template-columns: 64px minmax(0, 1fr);
-      align-items: center;
-      min-height: 56px;
-      gap: 12px;
-      background:
-        var(--card-overlay),
-        var(--panel-strong);
+    .camera-head {
+      display: flex; justify-content: space-between; align-items: center;
+      gap: 10px; padding: 9px 12px; color: var(--dim); font-size: 12px;
       border-bottom: 1px solid var(--line);
-      animation: rowSlideIn 0.42s ease both;
-      animation-delay: calc(var(--rank-index, 0) * 35ms);
     }
-
-    .entry-order-item:last-child {
-      border-bottom: none;
-    }
-
-    .entry-order-no {
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      align-self: stretch;
-      color: var(--text-dim);
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 24px;
-      font-weight: 700;
-      font-variant-numeric: tabular-nums;
-      background: var(--subtle-surface);
-      text-shadow: var(--display-shadow);
-    }
-
-    .entry-order-name {
-      min-width: 0;
-      color: var(--display-text);
-      font-size: 18px;
-      font-weight: 900;
-      letter-spacing: 0.03em;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      white-space: nowrap;
-      padding-right: 12px;
-    }
-
-    @media (min-width: 760px) {
-      .entry-order-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-        border: none;
-        border-radius: 0;
-        overflow: visible;
-      }
-
-      .entry-order-item {
-        border: 1px solid var(--line);
-        border-radius: 8px;
-        min-height: 62px;
-      }
-
-      .entry-order-item:last-child {
-        border-bottom: 1px solid var(--line);
-      }
-    }
-
-    .empty {
-      display: none;
-      border: 1px dashed rgba(231, 189, 86, 0.3);
-      border-radius: 8px;
-      color: var(--text-dim);
-      padding: 42px 20px;
-      text-align: center;
-      font-size: 14px;
-      line-height: 1.8;
-      background: var(--subtle-surface);
-    }
-
-    .empty strong {
-      display: block;
-      color: var(--accent-2);
-      font-family: Georgia, "Times New Roman", "Yu Mincho", serif;
-      font-size: 22px;
-      margin-bottom: 8px;
-    }
-
-    .form-card {
-      padding: 26px;
-    }
-
-    .form-title {
-      margin: 0 0 18px;
-      color: var(--accent-2);
-      font-family: Georgia, "Times New Roman", "Yu Mincho", serif;
-      font-size: 28px;
-      letter-spacing: 0.05em;
-    }
-
-    .field {
-      margin-bottom: 20px;
-    }
-
-    .field label {
-      display: block;
-      color: var(--accent);
-      font-size: 14px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      margin-bottom: 8px;
-    }
-
-    .field input {
-      width: 100%;
-      min-height: 58px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--control-surface);
-      color: var(--text);
-      font-size: 18px;
-      font-weight: 700;
-      padding: 14px 16px;
-      outline: none;
-      transition: border-color 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-    }
-
-    .field input::placeholder {
-      color: var(--placeholder);
-      font-weight: 700;
-    }
-
-    .field input:focus {
-      border-color: var(--accent);
-      background: var(--control-surface-focus);
-      box-shadow: 0 0 0 4px rgba(231, 189, 86, 0.13);
-    }
-
-    .submit-btn {
-      width: 100%;
-      min-height: 62px;
-      border: 1px solid rgba(255, 242, 193, 0.55);
-      border-radius: 8px;
-      background: linear-gradient(180deg, #ffe28a 0%, #d9a93f 52%, #a86d17 100%);
-      color: #171006;
-      font-size: 17px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      box-shadow: 0 18px 34px rgba(159, 107, 24, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-      animation: buttonBreath 3s ease-in-out infinite;
-      transition: transform 0.18s ease, filter 0.18s ease, box-shadow 0.18s ease;
-    }
-
-    .submit-btn:hover,
-    .submit-btn:focus-visible {
-      filter: brightness(1.06);
-      box-shadow: 0 22px 44px rgba(231, 189, 86, 0.26), inset 0 1px 0 rgba(255, 255, 255, 0.62);
-      outline: none;
-    }
-
-    .submit-btn:active {
-      transform: translateY(1px) scale(0.99);
-    }
-
-    .roulette-card {
-      padding: 18px;
-    }
-
-    .roulette-title {
-      margin: 0 0 8px;
-      color: var(--accent-2);
-      font-family: Georgia, "Times New Roman", "Yu Mincho", serif;
-      font-size: clamp(28px, 6vw, 42px);
-      letter-spacing: 0.05em;
-      text-align: center;
-    }
-
-    .roulette-lead {
-      margin: 0 auto 12px;
-      max-width: 42em;
-      color: var(--text-dim);
-      font-size: 14px;
-      font-weight: 700;
-      line-height: 1.7;
-      text-align: center;
-    }
-
-    .roulette-settings {
-      display: grid;
-      grid-template-columns: 1fr;
-      gap: 8px;
-      width: min(100%, 420px);
-      margin: 0 auto 12px;
-    }
-
-    .roulette-settings label {
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-      text-align: center;
-    }
-
-    .roulette-range-control {
-      display: grid;
-      grid-template-columns: auto minmax(96px, 1fr);
-      align-items: center;
-      gap: 8px;
-      border: 1px solid rgba(231, 189, 86, 0.28);
-      border-radius: 8px;
-      background: var(--subtle-surface);
-      padding: 10px 12px;
-    }
-
-    .roulette-range-control span {
-      color: var(--text-dim);
-      font-size: 15px;
-      font-weight: 900;
-      white-space: nowrap;
-    }
-
-    .roulette-range-control input {
-      width: 100%;
-      min-height: 42px;
-      border: 1px solid var(--line);
-      border-radius: 8px;
-      background: var(--control-surface);
-      color: var(--accent-2);
-      font-size: 20px;
-      font-weight: 900;
-      padding: 8px 10px;
-      text-align: center;
-      outline: none;
-    }
-
-    .roulette-range-control input:focus {
-      border-color: var(--accent);
-      box-shadow: 0 0 0 4px rgba(231, 189, 86, 0.13);
-    }
-
-    .roulette-display {
-      position: relative;
-      display: flex;
-      min-height: min(76vh, 690px);
-      flex-direction: column;
-      align-items: center;
-      justify-content: center;
-      overflow: hidden;
-      border: 1px solid rgba(231, 189, 86, 0.36);
-      border-radius: 8px;
-      background:
-        radial-gradient(circle at 50% 40%, rgba(231, 189, 86, 0.24), transparent 34%),
-        linear-gradient(135deg, rgba(231, 189, 86, 0.12), transparent 42%),
-        var(--subtle-surface);
-      text-align: center;
-      box-shadow: inset 0 0 48px rgba(231, 189, 86, 0.06);
-    }
-
-    .roulette-display::before,
-    .roulette-display::after {
-      content: "";
-      position: absolute;
-      inset: 18px;
-      pointer-events: none;
-      border: 1px solid rgba(255, 223, 133, 0.22);
-      border-radius: 50%;
-      transform: rotate(18deg);
-    }
-
-    .roulette-display::after {
-      inset: 42px;
-      border-color: rgba(255, 255, 255, 0.12);
-      transform: rotate(-14deg);
-    }
-
-    .roulette-display.spinning {
-      animation: roulettePulse 0.34s linear infinite;
-    }
-
-    .roulette-wheel-shell {
-      position: relative;
-      z-index: 1;
-      width: min(86vw, 560px, 68vh);
-      aspect-ratio: 1;
-      margin-bottom: 12px;
-      filter: drop-shadow(0 24px 40px rgba(0, 0, 0, 0.32));
-    }
-
-    .roulette-pointer {
-      position: absolute;
-      z-index: 3;
-      top: -12px;
-      left: 50%;
-      width: 0;
-      height: 0;
-      border-left: 18px solid transparent;
-      border-right: 18px solid transparent;
-      border-top: 34px solid var(--accent-2);
-      border-bottom: 0;
-      transform: translateX(-50%);
-      filter: drop-shadow(0 8px 12px rgba(0, 0, 0, 0.45));
-    }
-
-    .roulette-wheel {
-      position: absolute;
-      inset: 0;
-      border: 8px solid rgba(255, 223, 133, 0.72);
-      border-radius: 50%;
-      background: rgba(255, 255, 255, 0.06);
-      transform: rotate(var(--wheel-rotation, 0deg));
-      transition: transform 5.6s cubic-bezier(0.12, 0.76, 0.18, 1);
-      overflow: hidden;
-      box-shadow:
-        inset 0 0 0 2px rgba(45, 31, 9, 0.7),
-        inset 0 0 36px rgba(0, 0, 0, 0.38);
-    }
-
-    .roulette-wheel::before {
-      content: "";
-      position: absolute;
-      inset: 50%;
-      z-index: 2;
-      width: 64px;
-      height: 64px;
-      border: 5px solid rgba(255, 242, 193, 0.78);
-      border-radius: 50%;
-      background:
-        radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.72), transparent 18%),
-        linear-gradient(180deg, #ffe28a 0%, #d9a93f 54%, #7a4b10 100%);
-      transform: translate(-50%, -50%);
-      box-shadow: 0 10px 24px rgba(0, 0, 0, 0.38);
-    }
-
-    .roulette-wheel-number {
-      position: absolute;
-      left: 50%;
-      top: 50%;
-      z-index: 1;
-      display: flex;
-      width: 46px;
-      height: 46px;
-      align-items: center;
-      justify-content: center;
-      border: 1px solid rgba(255, 255, 255, 0.38);
-      border-radius: 50%;
-      background: rgba(0, 0, 0, 0.25);
-      color: #ffffff;
-      font-family: Georgia, "Times New Roman", serif;
-      font-size: 18px;
-      font-weight: 900;
-      font-variant-numeric: tabular-nums;
-      text-shadow: 0 2px 10px rgba(0, 0, 0, 0.55);
-      transform: translate(-50%, -50%) rotate(var(--number-rotation, 0deg));
-    }
-
-    .roulette-wheel-number.dense {
-      width: 28px;
-      height: 28px;
-      font-size: 11px;
-      background: rgba(0, 0, 0, 0.18);
-    }
-
-    .roulette-wheel-number.micro {
-      width: 20px;
-      height: 20px;
-      border-color: rgba(255, 255, 255, 0.24);
-      background: rgba(0, 0, 0, 0.08);
-      font-size: 8px;
-    }
-
-    .roulette-wheel-number.selected {
-      border-color: rgba(255, 242, 193, 0.92);
-      background: rgba(255, 223, 133, 0.22);
-      color: var(--accent-2);
-    }
-
-    .roulette-kicker {
-      position: relative;
-      z-index: 1;
-      display: inline-flex;
-      min-height: 26px;
-      align-items: center;
-      justify-content: center;
-      margin-bottom: 12px;
-      border: 1px solid rgba(231, 189, 86, 0.42);
-      border-radius: 999px;
-      background: rgba(231, 189, 86, 0.1);
-      color: var(--accent-2);
-      font-size: 11px;
-      font-weight: 900;
-      letter-spacing: 0.18em;
-      padding: 0 14px;
-    }
-
-    .roulette-number {
-      position: relative;
-      z-index: 1;
-      width: min(100%, 860px);
-      color: var(--display-text);
-      font-size: clamp(34px, 9vw, 84px);
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      line-height: 1.08;
-      overflow-wrap: anywhere;
-      text-shadow: var(--title-shadow);
-    }
-
-    .roulette-meta {
-      position: relative;
-      z-index: 1;
-      margin-top: 14px;
-      color: var(--accent);
-      font-size: 13px;
-      font-weight: 900;
-      letter-spacing: 0.08em;
-    }
-
-    .roulette-actions {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr);
-      gap: 10px;
-      margin-top: 12px;
-    }
-
-    .roulette-btn,
-    .roulette-reset-btn {
-      min-height: 56px;
-      border-radius: 8px;
-      font-size: 15px;
-      font-weight: 900;
-      letter-spacing: 0.04em;
-      cursor: pointer;
-      transition: transform 0.18s ease, filter 0.18s ease, border-color 0.18s ease, background 0.18s ease;
-    }
-
-    .roulette-btn {
-      border: 1px solid rgba(255, 242, 193, 0.55);
-      background: linear-gradient(180deg, #ffe28a 0%, #d9a93f 52%, #a86d17 100%);
-      color: #171006;
-      box-shadow: 0 18px 34px rgba(159, 107, 24, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-    }
-
-    .roulette-reset-btn {
-      border: 1px solid var(--line);
-      background: var(--subtle-surface);
-      color: var(--text-dim);
-    }
-
-    .roulette-btn:hover:not(:disabled),
-    .roulette-reset-btn:hover:not(:disabled),
-    .roulette-btn:focus-visible:not(:disabled),
-    .roulette-reset-btn:focus-visible:not(:disabled) {
-      filter: brightness(1.06);
-      transform: translateY(-1px);
-      outline: none;
+    #cameraStatus { display: flex; align-items: center; gap: 7px; }
+    #cameraStatus::before {
+      content: ''; width: 7px; height: 7px; border-radius: 50%; background: var(--dim);
     }
-
-    .roulette-btn:disabled,
-    .roulette-reset-btn:disabled {
-      cursor: not-allowed;
-      filter: grayscale(0.35) brightness(0.72);
-      opacity: 0.64;
-    }
-
-    .toast {
-      position: fixed;
-      z-index: 30;
-      bottom: 24px;
-      left: 50%;
-      transform: translateX(-50%) translateY(20px);
-      width: min(calc(100% - 32px), 420px);
-      border: 1px solid rgba(231, 189, 86, 0.55);
-      border-radius: 8px;
-      background: var(--panel-strong);
-      color: var(--text);
-      box-shadow: var(--shadow);
-      padding: 13px 18px;
-      text-align: center;
-      font-size: 14px;
-      font-weight: 800;
-      opacity: 0;
-      pointer-events: none;
-      transition: opacity 0.25s ease, transform 0.25s ease;
-      backdrop-filter: blur(18px);
-    }
-
-    .toast.show {
-      opacity: 1;
-      transform: translateX(-50%) translateY(0);
-    }
-
-    .measure-link {
-      position: fixed;
-      right: 18px;
-      bottom: 18px;
-      z-index: 20;
-      display: inline-block;
-      text-decoration: none;
-      background: var(--nav-bg);
-      color: var(--text-dim);
-      border: 1px solid var(--nav-border);
-      border-radius: 8px;
-      padding: 10px 16px;
-      font-size: 13.5px;
-      font-weight: 800;
-      letter-spacing: 0.04em;
-      box-shadow: var(--shadow);
-      backdrop-filter: blur(18px);
-      transition: color 0.2s ease, border-color 0.2s ease;
-    }
-
-    .measure-link:hover {
-      color: var(--text);
-      border-color: var(--accent);
-    }
-
-    .measure-link:focus-visible {
-      outline: 2px solid var(--focus-ring);
-      outline-offset: 2px;
-    }
-
-    @media (min-width: 560px) {
-      .rank-list {
-        display: grid;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 6px;
-        border: none;
-        border-radius: 0;
-        overflow: visible;
-      }
-
-      .rank-item {
-        grid-template-columns: 48px minmax(0, 1fr) auto 38px;
-        min-height: 62px;
-        border: 1px solid rgba(255, 255, 255, 0.08);
-        border-radius: 8px;
-        padding-right: 8px;
-      }
-
-      .rank-item:last-child {
-        border-bottom: 1px solid rgba(255, 255, 255, 0.08);
-      }
-
-      .rank-no {
-        font-size: 27px;
-      }
-
-      .rank-name {
-        font-size: 16px;
-      }
-
-      .rank-score {
-        font-size: 18px;
-      }
-
-      .del-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 10px;
-      }
-    }
-
-    @keyframes cardSheen {
-
-      0%,
-      100% {
-        opacity: 0.7;
-        transform: translateX(-8%);
-      }
-
-      50% {
-        opacity: 1;
-        transform: translateX(8%);
-      }
+    #cameraStatus.live::before { background: var(--ok); box-shadow: 0 0 8px rgba(74, 222, 128, .7); }
+    #cameraStatus.recording { color: #ff9b9b; }
+    #cameraStatus.recording::before { background: var(--err); box-shadow: 0 0 8px rgba(255, 107, 107, .8); }
+    #cameraStatus.replay::before { background: var(--accent); }
+    .camera-frame {
+      position: relative; aspect-ratio: 16 / 9; width: 100%; background: #020304;
     }
-
-    @keyframes statPop {
-      from {
-        opacity: 0;
-        transform: translateY(8px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0);
-      }
-    }
-
-    @keyframes championRise {
-      from {
-        opacity: 0;
-        transform: translateY(14px) scale(0.96);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
-    }
-
-    @keyframes championAura {
-
-      0%,
-      100% {
-        box-shadow: inset 0 0 0 rgba(231, 189, 86, 0), 0 0 0 rgba(231, 189, 86, 0);
-      }
-
-      50% {
-        box-shadow: inset 0 0 38px rgba(231, 189, 86, 0.08), 0 0 34px rgba(231, 189, 86, 0.12);
-      }
-    }
-
-    @keyframes badgeGlow {
-
-      0%,
-      100% {
-        border-color: rgba(231, 189, 86, 0.34);
-        box-shadow: 0 0 0 rgba(231, 189, 86, 0);
-      }
-
-      50% {
-        border-color: rgba(255, 223, 133, 0.76);
-        box-shadow: 0 0 18px rgba(231, 189, 86, 0.2);
-      }
+    .camera-frame video {
+      position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover;
+      background: #020304;
     }
-
-    @keyframes scorePop {
-      from {
-        opacity: 0;
-        transform: translateY(8px) scale(0.94);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateY(0) scale(1);
-      }
+    #replayVideo { display: none; object-fit: contain; }
+    .camera-empty {
+      position: absolute; inset: 0; display: grid; place-items: center;
+      padding: 24px; color: var(--dim); font-size: 13px; text-align: center;
     }
-
-    @keyframes rowSlideIn {
-      from {
-        opacity: 0;
-        transform: translateX(-12px);
-      }
-
-      to {
-        opacity: 1;
-        transform: translateX(0);
-      }
+    .camera-controls {
+      display: grid; grid-template-columns: minmax(0, 1fr) auto auto;
+      gap: 8px; padding: 10px; border-top: 1px solid var(--line);
     }
-
-    @keyframes ribbonGlow {
-
-      0%,
-      100% {
-        filter: brightness(1);
-      }
-
-      50% {
-        filter: brightness(1.18);
-      }
+    .camera-controls select {
+      min-width: 0; background: rgba(255, 255, 255, 0.04); color: var(--text);
+      border: 1px solid var(--line); border-radius: 7px; padding: 7px 8px;
     }
-
-    @keyframes buttonBreath {
-
-      0%,
-      100% {
-        box-shadow: 0 18px 34px rgba(159, 107, 24, 0.24), inset 0 1px 0 rgba(255, 255, 255, 0.55);
-      }
-
-      50% {
-        box-shadow: 0 22px 44px rgba(231, 189, 86, 0.3), inset 0 1px 0 rgba(255, 255, 255, 0.62);
-      }
+    .camera-controls button {
+      padding: 7px 10px; font-size: 12px; color: var(--text);
+      background: rgba(255, 255, 255, 0.06); border: 1px solid var(--line);
     }
+    #replayBtn:not(:disabled) { color: #221a08; background: var(--accent); border-color: var(--accent); }
 
-    @keyframes roulettePulse {
-      0% {
-        box-shadow: inset 0 0 34px rgba(231, 189, 86, 0.04), 0 0 0 rgba(231, 189, 86, 0);
-      }
-
-      50% {
-        box-shadow: inset 0 0 70px rgba(231, 189, 86, 0.16), 0 0 36px rgba(231, 189, 86, 0.16);
-      }
-
-      100% {
-        box-shadow: inset 0 0 34px rgba(231, 189, 86, 0.04), 0 0 0 rgba(231, 189, 86, 0);
-      }
+    @media (max-width: 900px) {
+      main { grid-template-columns: minmax(0, 1fr) minmax(260px, 38vw); gap: 14px; padding-inline: 16px; }
+      #bigTime { font-size: min(16vw, 34vh); }
+      .camera-controls { grid-template-columns: minmax(0, 1fr) auto; }
+      #replayBtn { grid-column: 1 / -1; }
     }
-
-    @media (min-width: 760px) {
-      body {
-        padding: 18px 24px 40px;
-      }
-
-      header {
-        margin-bottom: 16px;
-      }
-
-      header h1 {
-        font-size: clamp(46px, 6vw, 70px);
-      }
-
-      header p {
-        max-width: none;
-        font-size: 15px;
-      }
-
-      nav {
-        margin-bottom: 16px;
-      }
-
-      nav button {
-        min-height: 56px;
-        font-size: 17px;
-      }
-
-      .roulette-card {
-        padding: 22px 30px 26px;
-      }
-
-      .roulette-display {
-        min-height: min(74vh, 760px);
-      }
-
-      .roulette-wheel-shell {
-        width: min(64vw, 620px, 66vh);
-      }
-
-      .roulette-actions {
-        grid-template-columns: minmax(0, 1.5fr) minmax(180px, 0.5fr);
-      }
-
-      .card-content {
-        display: grid;
-        grid-template-columns: minmax(320px, 0.85fr) minmax(0, 1.55fr);
-        gap: 16px;
-        padding: 18px;
-      }
-
-      .stats {
-        grid-column: 1 / -1;
-        margin-bottom: 0;
-      }
-
-      .stat {
-        padding: 14px 12px;
-      }
-
-      .stat-value {
-        font-size: 22px;
-      }
-
-      .champion {
-        min-height: 430px;
-        margin-bottom: 0;
-        padding: 34px 24px 28px;
-        align-self: stretch;
-        display: none;
-      }
-
-      .champion.show {
-        display: flex;
-        flex-direction: column;
-        align-items: center;
-        justify-content: center;
-      }
-
-      .champion-badge {
-        min-height: 30px;
-        margin-bottom: 12px;
-        font-size: 12px;
-        padding-inline: 16px;
-      }
-
-      .champion-rank {
-        font-size: 82px;
-      }
-
-      .champion-name {
-        margin-top: 18px;
-        font-size: clamp(34px, 4vw, 48px);
-      }
-
-      .champion-score-label {
-        margin-top: 22px;
-        font-size: 14px;
-      }
-
-      .champion-score {
-        font-size: clamp(54px, 6vw, 76px);
-      }
 
-      .rank-list {
-        align-self: stretch;
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 10px;
-      }
-
-      .more-ranks-btn {
-        grid-column: 2;
-        justify-self: end;
-        margin-top: -4px;
-      }
-
-      .rank-item {
-        grid-template-columns: 64px minmax(0, 1fr) auto 44px;
-        min-height: 96px;
-        gap: 12px;
-        padding-right: 12px;
-      }
-
-      .rank-no {
-        font-size: 38px;
-      }
-
-      .rank-name {
-        font-size: 21px;
-      }
-
-      .rank-score {
-        font-size: 26px;
-      }
-
-      .del-btn {
-        width: 38px;
-        height: 38px;
-      }
+    /* ---- 下部: 操作バー ---- */
+    footer {
+      display: flex; justify-content: center; align-items: center;
+      flex-wrap: wrap; gap: 10px; padding: 16px 20px 22px;
     }
-
-    @media (min-width: 1120px) {
-      body {
-        padding-inline: 32px;
-      }
-
-      .card-content {
-        grid-template-columns: minmax(340px, 0.7fr) minmax(0, 1.9fr);
-        gap: 18px;
-      }
-
-      .champion {
-        min-height: 360px;
-      }
-
-      .rank-list {
-        grid-template-columns: repeat(2, minmax(0, 1fr));
-        gap: 12px;
-      }
-
-      .rank-item {
-        grid-template-columns: 56px minmax(0, 1fr) auto 40px;
-        min-height: 84px;
-      }
-
-      .rank-no {
-        font-size: 34px;
-      }
-
-      .rank-name {
-        font-size: 19px;
-      }
-
-      .rank-score {
-        font-size: 24px;
-      }
+    button {
+      border: none; border-radius: 8px; cursor: pointer;
+      padding: 9px 18px; font-size: 14px; font-weight: 700;
+      font-family: inherit;
     }
+    button:disabled { opacity: 0.4; cursor: not-allowed; }
+    #measureBtn { background: transparent; color: var(--text); border: 1px solid var(--line); font-weight: 500; }
 
-    @media (prefers-reduced-motion: reduce) {
-
-      *,
-      *::before,
-      *::after {
-        animation-duration: 0.001ms !important;
-        animation-iteration-count: 1 !important;
-        scroll-behavior: auto !important;
-      }
+    #unsupported {
+      display: none; color: var(--err); border: 1px solid var(--err);
+      border-radius: 8px; padding: 10px 14px; margin: 10px 20px 0; font-size: 14px;
     }
-
-    @media (max-width: 420px) {
-      body {
-        padding-inline: 10px;
-      }
-
-      .card-content,
-      .form-card {
-        padding: 14px;
-      }
 
-      .champion {
-        min-height: 222px;
-        padding-inline: 12px;
-      }
-
-      .rank-item {
-        grid-template-columns: 48px minmax(0, 1fr) auto 38px;
-        min-height: 68px;
-        gap: 8px;
-      }
-
-      .rank-no {
-        font-size: 27px;
-      }
-
-      .rank-name {
-        font-size: 16px;
-      }
-
-      .rank-score {
-        font-size: 19px;
-      }
-
-      .del-btn {
-        width: 32px;
-        height: 32px;
-        font-size: 10px;
-      }
-    }
+    :focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
   </style>
 </head>
 
 <body>
-
-  <div class="app">
-    <header>
-      <div class="eyebrow">Scoreboard</div>
-      <h1>プロアジリティランキング</h1>
-      <p>プロアジリティのタイムを登録して、最速ランキングをリアルタイムに表示します。</p>
-      <div class="theme-switch" aria-label="表示テーマ">
-        <button id="theme-light" class="theme-option" type="button" aria-pressed="false">ライト</button>
-        <button id="theme-dark" class="theme-option" type="button" aria-pressed="false">ダーク</button>
+  <header>
+    <div class="event-title">プロアジリティタイマー</div>
+    <div class="top-right">
+      <span id="state" class="state">未接続</span>
+      <div class="settings">
+        <label>モード<select id="modeSelect">
+          <option value="pro-agility-2_5" selected>2.5m-2.5m</option>
+          <option value="pro-agility-5">5m-5m</option>
+        </select></label>
+        <label>テスト名<input type="text" id="testName" value="Proagility2"></label>
+        <label>完了回数<input type="number" id="finishCount" value="4" min="1" max="20" step="1"></label>
+        <button id="cameraVisibilityBtn" type="button" aria-controls="cameraPanel" aria-pressed="true">カメラを非表示</button>
       </div>
-      <div id="sync-status" class="sync-status" role="status" aria-live="polite">クラウドへ接続中</div>
-    </header>
+    </div>
+  </header>
 
-    <nav aria-label="画面切り替え">
-      <button id="nav-ranking" class="active" type="button" onclick="showScreen('ranking')">ランキング</button>
-      <button id="nav-roulette" type="button" onclick="showScreen('roulette')">ルーレット</button>
-      <button id="nav-input" type="button" onclick="showScreen('input')">タイム登録</button>
-      <button id="nav-entrylist" type="button" onclick="showScreen('entrylist')">登録順一覧</button>
-    </nav>
+  <div id="unsupported">このブラウザは WebHID 非対応です。Chrome か Edge で開いてください。</div>
 
-    <section id="screen-ranking" class="screen active">
-      <div class="card">
-        <div class="card-content">
-          <div class="stats" aria-label="ランキング概要">
-            <div class="stat">
-              <span class="stat-label">登録数</span>
-              <span id="stat-count" class="stat-value">0</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">最速</span>
-              <span id="stat-top" class="stat-value">0</span>
-            </div>
-            <div class="stat">
-              <span class="stat-label">平均</span>
-              <span id="stat-average" class="stat-value">0</span>
-            </div>
-          </div>
-
-          <div id="champion" class="champion" aria-label="1位">
-            <button id="champion-delete" class="champion-delete" type="button">削除</button>
-            <div class="champion-badge">TOP RANK</div>
-            <div class="champion-rank">1</div>
-            <div id="champion-name" class="champion-name"></div>
-            <div class="champion-score-label">タイム</div>
-            <div id="champion-score" class="champion-score">
-              <span id="champion-score-value"></span>
-              <span class="champion-score-unit">秒</span>
-            </div>
-          </div>
-
-          <ul id="rank-list" class="rank-list"></ul>
-          <button id="more-ranks-btn" class="more-ranks-btn" type="button">11位以下を表示</button>
-          <div id="empty-msg" class="empty">
-            <strong>No Entries</strong>
-            まだタイムが登録されていません。<br>「タイム登録」から参加者の記録を追加してください。
-          </div>
+  <main id="displayMain">
+    <section class="timer-panel" aria-label="計測タイマー">
+      <div id="bigTime" class="waiting">--<span class="unit">秒</span></div>
+      <div id="gates"></div>
+      <div id="phase">計測ボタンで開始</div>
+      <div id="latestLap" class="latest-lap" aria-live="polite">
+        <span id="latestLapLabel">直近ラップ</span>
+        <strong id="latestLapTime" class="latest-lap-value">--<span class="unit">秒</span></strong>
+      </div>
+      <div class="lap-panel" aria-label="通過タイムと区間ラップ">
+        <div class="lap-head" aria-hidden="true">
+          <span>通過</span><span style="text-align:right">累計</span><span style="text-align:right">ラップ</span>
         </div>
+        <div id="lapRows" aria-live="polite"></div>
       </div>
     </section>
 
-    <section id="screen-roulette" class="screen">
-      <div class="card">
-        <div class="roulette-card">
-          <h2 class="roulette-title">抽選ルーレット</h2>
-          <p class="roulette-lead">番号範囲を設定して、No.1から最大番号までを同じ確率で1つ選びます。</p>
-
-          <div class="roulette-settings">
-            <label for="roulette-max-input">抽選する番号範囲</label>
-            <div class="roulette-range-control">
-              <span>No.1 〜 No.</span>
-              <input id="roulette-max-input" type="number" min="1" max="999" step="1" inputmode="numeric" value="100"
-                aria-label="最大番号">
-            </div>
-          </div>
-
-          <div id="roulette-display" class="roulette-display" aria-live="polite">
-            <div class="roulette-wheel-shell" aria-hidden="true">
-              <div class="roulette-pointer"></div>
-              <div id="roulette-wheel" class="roulette-wheel"></div>
-            </div>
-            <span id="roulette-kicker" class="roulette-kicker">READY</span>
-            <div id="roulette-number" class="roulette-number">未選択</div>
-            <div id="roulette-meta" class="roulette-meta">No.1〜No.100 が抽選対象です</div>
-          </div>
-
-          <div class="roulette-actions">
-            <button id="roulette-start" class="roulette-btn" type="button">ルーレット開始</button>
-            <button id="roulette-reset" class="roulette-reset-btn" type="button">結果をクリア</button>
-          </div>
-        </div>
+    <aside id="cameraPanel" class="camera-panel" aria-label="Webカメラと計測リプレイ">
+      <div class="camera-head">
+        <span>WEB CAMERA</span>
+        <span id="cameraStatus">カメラ停止中</span>
       </div>
-    </section>
-
-    <section id="screen-input" class="screen">
-      <div class="card">
-        <form id="entry-form" class="form-card">
-          <h2 class="form-title">タイム登録</h2>
-          <div class="field">
-            <label for="name-input">名前</label>
-            <input id="name-input" type="text" maxlength="20" placeholder="例）山田 太郎" autocomplete="name" required>
-          </div>
-          <div class="field">
-            <label for="score-input">タイム（秒）</label>
-            <input id="score-input" type="number" step="0.01" min="0.01" max="86400" placeholder="例）4.85"
-              inputmode="decimal" required>
-          </div>
-          <button type="submit" class="submit-btn">タイムを登録してランキングを見る</button>
-        </form>
+      <div class="camera-frame">
+        <video id="liveVideo" autoplay muted playsinline></video>
+        <video id="replayVideo" controls playsinline></video>
+        <div id="cameraEmpty" class="camera-empty">カメラを開始すると、ここにライブ映像が表示されます</div>
       </div>
-    </section>
-
-    <section id="screen-entrylist" class="screen">
-      <div class="card">
-        <div class="form-card">
-          <h2 class="form-title">登録順一覧</h2>
-          <ol id="entry-order-list" class="entry-order-list"></ol>
-          <div id="entry-order-empty" class="empty">
-            <strong>No Entries</strong>
-            まだタイムが登録されていません。<br>「タイム登録」から参加者の記録を追加してください。
-          </div>
-        </div>
+      <div class="camera-controls">
+        <select id="cameraSelect" aria-label="使用するWebカメラ">
+          <option value="">既定のカメラ</option>
+        </select>
+        <button id="cameraBtn" type="button">カメラ開始</button>
+        <button id="replayBtn" type="button" disabled>リプレイを見る</button>
       </div>
-    </section>
-  </div>
+    </aside>
+  </main>
 
-  <div id="toast" class="toast"></div>
+  <footer>
+    <button id="measureBtn">計測</button>
+    <button id="testCrossingBtn" type="button" hidden>疑似通過</button>
+  </footer>
 
-  <a class="measure-link" href="witty-display.html">計測画面へ</a>
+  <script type="module">
+    import {
+      buildTestStart, scanFrames, parseError, parseTestResultEvent, BaseCmd, WittyCmd,
+    } from './witty-protocol.js';
 
-  <script src="firebase-config.js"></script>
-  <script type="module" src="firebase-ranking.js"></script>
-  <script>
-    const STORAGE_KEY = 'ranking-app-entries';
-    const ROULETTE_MAX_KEY = 'ranking-app-roulette-max';
-    const THEME_KEY = 'ranking-app-theme';
-    const DEFAULT_ROULETTE_MAX = 100;
-    const MAX_ROULETTE_NUMBER = 999;
+    const $ = (id) => document.getElementById(id);
 
-    function getInitialTheme() {
-      const currentTheme = document.documentElement.dataset.theme;
-      if (currentTheme === 'light' || currentTheme === 'dark') return currentTheme;
+    if (!('hid' in navigator)) { $('unsupported').style.display = 'block'; }
 
-      try {
-        const savedTheme = localStorage.getItem(THEME_KEY);
-        if (savedTheme === 'light' || savedTheme === 'dark') return savedTheme;
-      } catch (e) {
-        // Ignore storage access errors and fall back to the existing dark design.
-      }
+    let device = null;
+    let mode = 'disconnected'; // disconnected | idle | arming | online
+    let wantArm = false;       // 再列挙をまたいで「開始したい」意思を保持
+    let armAttempts = 0;
+    const MAX_ARM_ATTEMPTS = 5;
+    // 測定モードのプリセット。テスト名はWittyタイマーに登録済みの名称に合わせる。
+    const MODES = {
+      'pro-agility-2_5': { testName: 'Proagility2', finishCount: 4 },
+      'pro-agility-5': { testName: 'Proagility', finishCount: 2 },
+    };
+    const DEFAULT_FINISH_CROSSING_COUNT = MODES['pro-agility-2_5'].finishCount;
+    const CAMERA_STORAGE_KEY = 'witty-display-camera-id';
+    const CAMERA_VISIBLE_STORAGE_KEY = 'witty-display-camera-visible';
+    const TEST_CAMERA_MODE = new URLSearchParams(location.search).has('testCamera');
+    let currentRun = [];
+    let lastAnimatedLapCount = 0;
+    let cameraStream = null;
+    let cameraStartPromise = null;
+    let mediaRecorder = null;
+    let finishRecordingTimer = null;
+    let replayUrl = null;
+    let replayMode = false;
+    let cameraVisible = localStorage.getItem(CAMERA_VISIBLE_STORAGE_KEY) !== 'false';
 
-      return 'dark';
+    function getFinishCrossingCount() {
+      const parsed = Math.floor(Number($('finishCount').value));
+      if (!Number.isFinite(parsed)) return DEFAULT_FINISH_CROSSING_COUNT;
+      return Math.min(20, Math.max(1, parsed));
     }
 
-    function updateThemeButtons(theme) {
-      ['light', 'dark'].forEach((mode) => {
-        const button = document.getElementById(`theme-${mode}`);
-        if (!button) return;
+    function log(msg) { console.log(`[witty-display] ${msg}`); }
 
-        const active = mode === theme;
-        button.classList.toggle('active', active);
-        button.setAttribute('aria-pressed', String(active));
+    // --- Webカメラ / 計測リプレイ ---
+    function setCameraStatus(text, cls = '') {
+      const status = $('cameraStatus');
+      status.textContent = text;
+      status.className = cls;
+    }
+
+    function setCameraEmpty(text, visible = true) {
+      $('cameraEmpty').textContent = text;
+      $('cameraEmpty').style.display = visible ? 'grid' : 'none';
+    }
+
+    function setCameraControlsRecording(recording) {
+      $('cameraSelect').disabled = recording;
+      $('cameraBtn').disabled = recording;
+    }
+
+    function showLiveVideo() {
+      replayMode = false;
+      $('replayVideo').pause();
+      $('replayVideo').style.display = 'none';
+      $('liveVideo').style.display = 'block';
+      $('replayBtn').textContent = 'リプレイを見る';
+      setCameraEmpty('', Boolean(!cameraStream));
+      if (mediaRecorder?.state === 'recording') setCameraStatus('REC 計測を録画中', 'recording');
+      else if (cameraStream) setCameraStatus('LIVE', 'live');
+    }
+
+    function showReplayVideo() {
+      if (!replayUrl) return;
+      replayMode = true;
+      $('liveVideo').style.display = 'none';
+      $('replayVideo').style.display = 'block';
+      $('replayVideo').src = replayUrl;
+      $('replayBtn').textContent = 'ライブに戻る';
+      setCameraEmpty('', false);
+      setCameraStatus('REPLAY', 'replay');
+      $('replayVideo').currentTime = 0;
+      $('replayVideo').play().catch(() => { /* 再生ボタンから手動再生できる */ });
+    }
+
+    function clearReplay() {
+      replayMode = false;
+      $('replayBtn').disabled = true;
+      $('replayBtn').textContent = 'リプレイを見る';
+      $('replayVideo').pause();
+      $('replayVideo').removeAttribute('src');
+      $('replayVideo').load();
+      if (replayUrl) URL.revokeObjectURL(replayUrl);
+      replayUrl = null;
+      showLiveVideo();
+    }
+
+    function getRecordingOptions() {
+      const mimeTypes = [
+        'video/webm;codecs=vp9',
+        'video/webm;codecs=vp8',
+        'video/webm',
+      ];
+      const mimeType = mimeTypes.find((type) => MediaRecorder.isTypeSupported(type));
+      return mimeType ? { mimeType, videoBitsPerSecond: 4_000_000 } : { videoBitsPerSecond: 4_000_000 };
+    }
+
+    function stopActiveRecording(keepReplay) {
+      clearTimeout(finishRecordingTimer);
+      finishRecordingTimer = null;
+      const recorder = mediaRecorder;
+      if (!recorder || recorder.state === 'inactive') return Promise.resolve();
+      recorder.keepReplay = keepReplay;
+      return new Promise((resolve) => {
+        recorder.addEventListener('stop', resolve, { once: true });
+        try { recorder.stop(); }
+        catch (error) { log('録画停止エラー: ' + error.message); resolve(); }
       });
     }
 
-    function applyTheme(theme) {
-      const nextTheme = theme === 'light' ? 'light' : 'dark';
-      document.documentElement.dataset.theme = nextTheme;
+    async function startRunRecording() {
+      clearTimeout(finishRecordingTimer);
+      finishRecordingTimer = null;
+      if (cameraStartPromise) await cameraStartPromise.catch(() => {});
+      await stopActiveRecording(false);
+      clearReplay();
 
-      try {
-        localStorage.setItem(THEME_KEY, nextTheme);
-      } catch (e) {
-        // Theme still changes for the current page even if storage is unavailable.
-      }
-
-      updateThemeButtons(nextTheme);
-    }
-
-    function loadEntries() {
-      try {
-        const raw = localStorage.getItem(STORAGE_KEY);
-        return raw ? JSON.parse(raw) : [];
-      } catch (e) {
-        return [];
-      }
-    }
-
-    function saveLocalEntries(entries) {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify(entries));
-    }
-
-    async function refreshEntriesFromStorage() {
-      if (rankingStore) {
-        try {
-          await importPendingLocalEntries();
-        } catch (error) {
-          console.error('計測画面のランキング登録を同期できませんでした', error);
-          showToast('計測結果をクラウドへ同期できませんでした');
-        }
-        return;
-      }
-      entries = loadEntries();
-      renderRanking();
-      renderEntryList();
-    }
-
-    function clampRouletteMax(value) {
-      const parsed = Math.floor(Number(value));
-      if (!Number.isFinite(parsed)) return DEFAULT_ROULETTE_MAX;
-      return Math.min(MAX_ROULETTE_NUMBER, Math.max(1, parsed));
-    }
-
-    function loadRouletteMax() {
-      try {
-        return clampRouletteMax(localStorage.getItem(ROULETTE_MAX_KEY) || DEFAULT_ROULETTE_MAX);
-      } catch (e) {
-        return DEFAULT_ROULETTE_MAX;
-      }
-    }
-
-    function saveRouletteMax(value) {
-      localStorage.setItem(ROULETTE_MAX_KEY, String(value));
-    }
-
-    function formatScore(score) {
-      return `${formatTimeValue(score)}秒`;
-    }
-
-    function formatTimeValue(score) {
-      return Number(score).toLocaleString('ja-JP', {
-        minimumFractionDigits: 2,
-        maximumFractionDigits: 2
-      });
-    }
-
-    let entries = loadEntries();
-    let rankingStore = null;
-    let syncMode = 'connecting';
-    let stopEntrySync = null;
-    let localMigrationPromise = null;
-    let showAllRanks = false;
-    let rouletteMaxNumber = loadRouletteMax();
-    let rouletteStopTimer = null;
-    let rouletteSelectedNumber = null;
-    let rouletteRunning = false;
-    let rouletteRotation = 0;
-    let theme = getInitialTheme();
-    const WHEEL_COLORS = ['#c0392b', '#d9a93f', '#2f855a', '#2563eb', '#7c3aed', '#db2777', '#0f766e', '#ea580c'];
-
-    function showScreen(name) {
-      ['ranking', 'roulette', 'input', 'entrylist'].forEach(screenName => {
-        document.getElementById(`screen-${screenName}`).classList.toggle('active', name === screenName);
-        document.getElementById(`nav-${screenName}`).classList.toggle('active', name === screenName);
-      });
-      if (name === 'ranking') renderRanking();
-      if (name === 'roulette') renderRoulette();
-      if (name === 'entrylist') renderEntryList();
-    }
-
-    function setSyncStatus(mode, message) {
-      syncMode = mode;
-      const status = document.getElementById('sync-status');
-      status.className = `sync-status ${mode}`;
-      status.textContent = message;
-    }
-
-    function importPendingLocalEntries() {
-      if (!rankingStore) return Promise.resolve();
-      if (localMigrationPromise) return localMigrationPromise;
-
-      localMigrationPromise = (async () => {
-        const localEntries = loadEntries();
-        if (localEntries.length === 0) return;
-        await rankingStore.importLocalEntries(localEntries);
-        localStorage.removeItem(STORAGE_KEY);
-      })().finally(() => {
-        localMigrationPromise = null;
-      });
-
-      return localMigrationPromise;
-    }
-
-    async function removeEntry(entry) {
-      try {
-        if (rankingStore) {
-          await rankingStore.deleteEntry(entry.id);
-          return;
-        }
-
-        if (syncMode === 'local') {
-          entries = entries.filter(item => item.id !== entry.id);
-          saveLocalEntries(entries);
-          renderRanking();
-          renderEntryList();
-          return;
-        }
-
-        showToast('クラウドに接続できていないため削除できません');
-      } catch (error) {
-        console.error('ランキングの削除に失敗しました', error);
-        showToast('削除に失敗しました。接続を確認してください');
-      }
-    }
-
-    function renderStats(sorted) {
-      const count = sorted.length;
-      const total = sorted.reduce((sum, entry) => sum + Number(entry.score), 0);
-      const average = count ? total / count : 0;
-
-      document.getElementById('stat-count').textContent = count;
-      document.getElementById('stat-top').textContent = count ? formatScore(sorted[0].score) : '0';
-      document.getElementById('stat-average').textContent = count ? formatScore(average) : '0';
-    }
-
-    function renderChampion(entry) {
-      const champion = document.getElementById('champion');
-      const deleteButton = document.getElementById('champion-delete');
-      champion.classList.toggle('show', Boolean(entry));
-
-      if (!entry) return;
-
-      document.getElementById('champion-name').textContent = entry.name;
-      document.getElementById('champion-score-value').textContent = formatTimeValue(entry.score);
-      deleteButton.setAttribute('aria-label', `${entry.name}を削除`);
-      deleteButton.onclick = () => removeEntry(entry);
-    }
-
-    function renderRanking() {
-      const list = document.getElementById('rank-list');
-      const emptyMsg = document.getElementById('empty-msg');
-      const moreButton = document.getElementById('more-ranks-btn');
-      const sorted = [...entries].sort((a, b) => Number(a.score) - Number(b.score));
-
-      list.innerHTML = '';
-      renderStats(sorted);
-      renderChampion(sorted[0]);
-
-      if (sorted.length === 0) {
-        emptyMsg.style.display = 'block';
-        moreButton.classList.remove('show');
-        showAllRanks = false;
+      const videoTrack = cameraStream?.getVideoTracks().find((track) => track.readyState === 'live');
+      if (!videoTrack || !('MediaRecorder' in window)) {
+        if (!cameraStream) setCameraStatus('カメラ未接続');
         return;
       }
 
-      emptyMsg.style.display = 'none';
-      moreButton.classList.toggle('show', sorted.length > 10);
-      moreButton.textContent = showAllRanks ? 'トップ10に戻す' : '11位以下を表示';
-      moreButton.setAttribute('aria-expanded', String(showAllRanks));
-
-      const visibleEntries = showAllRanks ? sorted.slice(1) : sorted.slice(1, 10);
-
-      visibleEntries.forEach((entry, index) => {
-        const rank = index + 2;
-        const li = document.createElement('li');
-        li.className = 'rank-item' + (rank <= 3 ? ' rank-' + rank : '');
-        li.style.setProperty('--rank-index', index);
-        li.innerHTML = `
-        <div class="rank-no">${rank}</div>
-        <div class="rank-name"></div>
-        <div class="rank-score"></div>
-        <button class="del-btn" type="button" title="削除" aria-label="${entry.name}を削除">削除</button>
-      `;
-        li.querySelector('.rank-name').textContent = entry.name;
-        li.querySelector('.rank-score').textContent = formatScore(entry.score);
-        li.querySelector('.del-btn').addEventListener('click', () => removeEntry(entry));
-        list.appendChild(li);
-      });
-    }
-
-    function renderEntryList() {
-      const list = document.getElementById('entry-order-list');
-      const emptyMsg = document.getElementById('entry-order-empty');
-
-      list.innerHTML = '';
-      emptyMsg.style.display = entries.length === 0 ? 'block' : 'none';
-
-      entries.forEach((entry, index) => {
-        const li = document.createElement('li');
-        li.className = 'entry-order-item';
-        li.style.setProperty('--rank-index', index);
-        li.innerHTML = `
-        <div class="entry-order-no">${index + 1}</div>
-        <div class="entry-order-name"></div>
-      `;
-        li.querySelector('.entry-order-name').textContent = entry.name;
-        list.appendChild(li);
-      });
-    }
-
-    function getRandomIndex(max) {
-      if (max <= 0) return -1;
-
-      if (window.crypto && window.crypto.getRandomValues) {
-        const maxUint = 0x100000000;
-        const limit = Math.floor(maxUint / max) * max;
-        const values = new Uint32Array(1);
-
-        do {
-          window.crypto.getRandomValues(values);
-        } while (values[0] >= limit);
-
-        return values[0] % max;
-      }
-
-      return Math.floor(Math.random() * max);
-    }
-
-    function createWheelGradient(count) {
-      if (count <= 0) {
-        return 'radial-gradient(circle, rgba(231, 189, 86, 0.16), rgba(255, 255, 255, 0.04))';
-      }
-
-      const slice = 360 / count;
-      const segments = Array.from({ length: count }, (_, index) => {
-        const start = index * slice;
-        const end = (index + 1) * slice;
-        const color = WHEEL_COLORS[index % WHEEL_COLORS.length];
-        return `${color} ${start}deg ${end}deg`;
-      });
-
-      return `conic-gradient(${segments.join(', ')})`;
-    }
-
-    function renderWheel(count, selectedNumber) {
-      const wheel = document.getElementById('roulette-wheel');
-      wheel.innerHTML = '';
-      wheel.style.background = createWheelGradient(count);
-      wheel.style.setProperty('--wheel-rotation', `${rouletteRotation}deg`);
-
-      if (count <= 0) return;
-
-      const slice = 360 / count;
-      const labelRadius = count > 60 ? 41 : count > 24 ? 39 : count > 10 ? 36 : 38;
-
-      for (let index = 0; index < count; index += 1) {
-        const participantNumber = index + 1;
-        const angle = (index + 0.5) * slice - 90;
-        const radians = angle * Math.PI / 180;
-        const label = document.createElement('span');
-        label.className = 'roulette-wheel-number' + (selectedNumber === participantNumber ? ' selected' : '');
-        if (count > 60) {
-          label.classList.add('micro');
-        } else if (count > 24) {
-          label.classList.add('dense');
-        }
-        label.textContent = participantNumber;
-        label.style.left = `${50 + Math.cos(radians) * labelRadius}%`;
-        label.style.top = `${50 + Math.sin(radians) * labelRadius}%`;
-        label.style.setProperty('--number-rotation', `${-rouletteRotation}deg`);
-        wheel.appendChild(label);
-      }
-    }
-
-    function spinWheelToNumber(participantNumber, count) {
-      const wheel = document.getElementById('roulette-wheel');
-      const slice = 360 / count;
-      const selectedCenter = (participantNumber - 0.5) * slice;
-      const landingJitter = Math.min(slice * 0.28, 18);
-      const selectedAngle = selectedCenter + (Math.random() * 2 - 1) * landingJitter;
-      const current = ((rouletteRotation % 360) + 360) % 360;
-      const target = (360 - selectedAngle) % 360;
-      const delta = (target - current + 360) % 360;
-
-      rouletteRotation += 360 * 6 + delta;
-      wheel.style.setProperty('--wheel-rotation', `${rouletteRotation}deg`);
-    }
-
-    function setRouletteDisplay(participantNumber, kicker, meta) {
-      document.getElementById('roulette-kicker').textContent = kicker;
-      document.getElementById('roulette-number').textContent = participantNumber ? `No.${participantNumber}` : '未選択';
-      document.getElementById('roulette-meta').textContent = meta;
-    }
-
-    function renderRoulette() {
-      const startButton = document.getElementById('roulette-start');
-      const resetButton = document.getElementById('roulette-reset');
-      const maxInput = document.getElementById('roulette-max-input');
-      const count = rouletteMaxNumber;
-      const selectedNumber = rouletteSelectedNumber && rouletteSelectedNumber <= count ? rouletteSelectedNumber : null;
-
-      if (rouletteSelectedNumber && !selectedNumber) {
-        rouletteSelectedNumber = null;
-      }
-
-      maxInput.value = count;
-      maxInput.disabled = rouletteRunning;
-      renderWheel(count, selectedNumber);
-
-      startButton.disabled = count === 0 || rouletteRunning;
-      resetButton.disabled = !rouletteSelectedNumber || rouletteRunning;
-      startButton.textContent = rouletteRunning ? '抽選中...' : 'ルーレット開始';
-
-      if (rouletteRunning) return;
-
-      if (selectedNumber) {
-        setRouletteDisplay(selectedNumber, 'WINNER', `完全ランダムで選出 / ${count}個の番号から抽選`);
-      } else if (count > 0) {
-        setRouletteDisplay(null, 'READY', `No.1〜No.${count} が抽選対象です`);
-      } else {
-        setRouletteDisplay(null, 'EMPTY', 'エントリーを登録すると抽選できます');
-      }
-    }
-
-    function startRoulette() {
-      if (rouletteMaxNumber <= 0 || rouletteRunning) return;
-
-      clearTimeout(rouletteStopTimer);
-
-      rouletteRunning = true;
-      rouletteSelectedNumber = null;
-      const winnerNumber = getRandomIndex(rouletteMaxNumber) + 1;
-
-      document.getElementById('roulette-display').classList.add('spinning');
-      renderRoulette();
-      setRouletteDisplay(null, 'SPINNING', '抽選中...');
-      spinWheelToNumber(winnerNumber, rouletteMaxNumber);
-
-      rouletteStopTimer = setTimeout(() => {
-        rouletteStopTimer = null;
-
-        rouletteSelectedNumber = winnerNumber;
-        rouletteRunning = false;
-        document.getElementById('roulette-display').classList.remove('spinning');
-        renderRoulette();
-        showToast(`No.${winnerNumber}に決定しました`);
-      }, 5700);
-    }
-
-    function resetRoulette() {
-      if (rouletteRunning) return;
-      rouletteSelectedNumber = null;
-      renderRoulette();
-    }
-
-    function updateRouletteMax(value) {
-      rouletteMaxNumber = clampRouletteMax(value);
-      saveRouletteMax(rouletteMaxNumber);
-      rouletteSelectedNumber = null;
-      renderRoulette();
-    }
-
-    function showToast(message) {
-      const toast = document.getElementById('toast');
-      toast.textContent = message;
-      toast.classList.add('show');
-      setTimeout(() => toast.classList.remove('show'), 1800);
-    }
-
-    document.getElementById('entry-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const nameInput = document.getElementById('name-input');
-      const scoreInput = document.getElementById('score-input');
-      const submitButton = e.currentTarget.querySelector('[type="submit"]');
-      const name = nameInput.value.trim();
-      const score = Number(scoreInput.value);
-
-      if (!name || !Number.isFinite(score) || score <= 0 || score > 86400) return;
-
-      submitButton.disabled = true;
+      const chunks = [];
+      let recorder;
       try {
-        if (rankingStore) {
-          await rankingStore.addEntry({ name, score });
-        } else if (syncMode === 'local') {
-          entries.push({ id: Date.now() + '-' + Math.random().toString(36).slice(2), name, score });
-          saveLocalEntries(entries);
-          renderRanking();
-          renderEntryList();
-        } else {
-          showToast('クラウドへの接続完了後に登録してください');
-          return;
+        recorder = new MediaRecorder(cameraStream, getRecordingOptions());
+      } catch (error) {
+        setCameraControlsRecording(false);
+        setCameraStatus('録画を開始できません', 'err');
+        log('録画開始エラー: ' + error.message);
+        return;
+      }
+      recorder.keepReplay = false;
+      recorder.addEventListener('dataavailable', (event) => {
+        if (event.data?.size) chunks.push(event.data);
+      });
+      recorder.addEventListener('stop', () => {
+        if (mediaRecorder === recorder) mediaRecorder = null;
+        setCameraControlsRecording(false);
+        if (recorder.keepReplay && chunks.length) {
+          const blob = new Blob(chunks, { type: recorder.mimeType || 'video/webm' });
+          if (replayUrl) URL.revokeObjectURL(replayUrl);
+          replayUrl = URL.createObjectURL(blob);
+          $('replayBtn').disabled = false;
+          setCameraStatus('リプレイ準備完了', 'live');
+          log(`リプレイ準備完了 (${Math.round(blob.size / 1024)} KB)`);
+        } else if (cameraStream) {
+          setCameraStatus('LIVE', 'live');
+        }
+      });
+      mediaRecorder = recorder;
+      recorder.start(250);
+      setCameraControlsRecording(true);
+      showLiveVideo();
+      log('計測映像の録画開始');
+    }
+
+    function finishRunRecording() {
+      if (!mediaRecorder || mediaRecorder.state !== 'recording') return;
+      setCameraStatus('REC 終了映像を記録中', 'recording');
+      clearTimeout(finishRecordingTimer);
+      finishRecordingTimer = setTimeout(() => {
+        stopActiveRecording(true).catch((error) => log('録画停止エラー: ' + error.message));
+      }, 1000);
+    }
+
+    async function populateCameraSelect(selectedDeviceId = '') {
+      const devices = await navigator.mediaDevices.enumerateDevices();
+      const cameras = devices.filter((device) => device.kind === 'videoinput');
+      const select = $('cameraSelect');
+      select.innerHTML = '';
+      cameras.forEach((camera, index) => {
+        const option = document.createElement('option');
+        option.value = camera.deviceId;
+        option.textContent = camera.label || `Webカメラ ${index + 1}`;
+        select.appendChild(option);
+      });
+      if (!cameras.length) {
+        select.add(new Option('Webカメラなし', ''));
+        return;
+      }
+      const available = cameras.some((camera) => camera.deviceId === selectedDeviceId);
+      select.value = available ? selectedDeviceId : cameras[0].deviceId;
+      localStorage.setItem(CAMERA_STORAGE_KEY, select.value);
+    }
+
+    async function startCamera(deviceId = '') {
+      if (!navigator.mediaDevices?.getUserMedia) {
+        setCameraEmpty('この環境ではWebカメラを使用できません');
+        setCameraStatus('カメラ非対応');
+        return;
+      }
+      if (cameraStartPromise) return cameraStartPromise;
+      cameraStartPromise = (async () => {
+        setCameraStatus('カメラ準備中…', 'arming');
+        setCameraEmpty('Webカメラに接続しています…');
+        await stopActiveRecording(false);
+        cameraStream?.getTracks().forEach((track) => track.stop());
+        cameraStream = null;
+
+        if (TEST_CAMERA_MODE) {
+          const canvas = document.createElement('canvas');
+          canvas.width = 1280; canvas.height = 720;
+          const context = canvas.getContext('2d');
+          let frame = 0;
+          const draw = () => {
+            if (!cameraStream) return;
+            const hue = (frame++ * 2) % 360;
+            context.fillStyle = `hsl(${hue} 45% 16%)`;
+            context.fillRect(0, 0, canvas.width, canvas.height);
+            context.fillStyle = '#f7f3ea';
+            context.font = '700 54px Segoe UI';
+            context.fillText('CAMERA TEST', 48, 82);
+            context.fillStyle = '#e7bd56';
+            context.fillRect(48 + ((frame * 9) % 1000), 260, 150, 150);
+            requestAnimationFrame(draw);
+          };
+          cameraStream = canvas.captureStream(30);
+          draw();
+          $('cameraSelect').innerHTML = '<option value="">疑似Webカメラ</option>';
         }
 
-        nameInput.value = '';
-        scoreInput.value = '';
-        showToast(`「${name}」を登録しました`);
-        showScreen('ranking');
-      } catch (error) {
-        console.error('ランキングの登録に失敗しました', error);
-        showToast('登録に失敗しました。接続を確認してください');
+        if (!TEST_CAMERA_MODE) {
+          const video = {
+            width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 },
+          };
+          if (deviceId) video.deviceId = { exact: deviceId };
+          try {
+            cameraStream = await navigator.mediaDevices.getUserMedia({ video, audio: false });
+          } catch (error) {
+            if (deviceId && ['OverconstrainedError', 'NotFoundError'].includes(error.name)) {
+              cameraStream = await navigator.mediaDevices.getUserMedia({
+                video: { width: { ideal: 1280 }, height: { ideal: 720 }, frameRate: { ideal: 60 } },
+                audio: false,
+              });
+            } else {
+              throw error;
+            }
+          }
+        }
+        $('liveVideo').srcObject = cameraStream;
+        await $('liveVideo').play().catch(() => {});
+        if (!TEST_CAMERA_MODE) {
+          const activeId = cameraStream.getVideoTracks()[0]?.getSettings().deviceId || deviceId;
+          await populateCameraSelect(activeId);
+        }
+        $('cameraBtn').textContent = 'カメラ停止';
+        showLiveVideo();
+        log('Webカメラ接続');
+      })().catch((error) => {
+        const messages = {
+          NotAllowedError: 'カメラの使用が許可されていません',
+          NotFoundError: 'Webカメラが見つかりません',
+          NotReadableError: 'Webカメラを他のアプリが使用中です',
+        };
+        const message = messages[error.name] || `カメラを開始できません: ${error.message}`;
+        setCameraEmpty(message);
+        setCameraStatus('カメラエラー', 'err');
+        $('cameraBtn').textContent = '再試行';
+        log(message);
+        throw error;
+      }).finally(() => { cameraStartPromise = null; });
+      return cameraStartPromise;
+    }
+
+    async function stopCamera() {
+      await stopActiveRecording(false);
+      cameraStream?.getTracks().forEach((track) => track.stop());
+      cameraStream = null;
+      $('liveVideo').srcObject = null;
+      $('cameraBtn').textContent = 'カメラ開始';
+      setCameraStatus('カメラ停止中');
+      if (replayMode && replayUrl) showReplayVideo();
+      else setCameraEmpty('カメラを開始すると、ここにライブ映像が表示されます');
+    }
+
+    async function setCameraVisible(visible, { persist = true, restart = true } = {}) {
+      cameraVisible = Boolean(visible);
+      $('displayMain').classList.toggle('camera-hidden', !cameraVisible);
+      $('cameraPanel').hidden = !cameraVisible;
+      $('cameraVisibilityBtn').textContent = cameraVisible ? 'カメラを非表示' : 'カメラを表示';
+      $('cameraVisibilityBtn').setAttribute('aria-pressed', String(cameraVisible));
+
+      if (persist) localStorage.setItem(CAMERA_VISIBLE_STORAGE_KEY, String(cameraVisible));
+
+      if (!cameraVisible) {
+        if (cameraStartPromise) await cameraStartPromise.catch(() => {});
+        await stopCamera();
+      } else if (restart && !cameraStream) {
+        await startCamera(localStorage.getItem(CAMERA_STORAGE_KEY) || '').catch(() => {});
+      }
+    }
+
+    $('cameraVisibilityBtn').addEventListener('click', async () => {
+      $('cameraVisibilityBtn').disabled = true;
+      try {
+        await setCameraVisible(!cameraVisible);
       } finally {
-        submitButton.disabled = false;
+        $('cameraVisibilityBtn').disabled = false;
       }
     });
 
-    document.getElementById('more-ranks-btn').addEventListener('click', () => {
-      showAllRanks = !showAllRanks;
-      renderRanking();
+    $('cameraBtn').addEventListener('click', async () => {
+      if (cameraStream) await stopCamera();
+      else await startCamera(localStorage.getItem(CAMERA_STORAGE_KEY) || '').catch(() => {});
     });
 
-    document.getElementById('theme-light').addEventListener('click', () => {
-      theme = 'light';
-      applyTheme(theme);
-    });
-    document.getElementById('theme-dark').addEventListener('click', () => {
-      theme = 'dark';
-      applyTheme(theme);
+    $('cameraSelect').addEventListener('change', async () => {
+      const deviceId = $('cameraSelect').value;
+      localStorage.setItem(CAMERA_STORAGE_KEY, deviceId);
+      await startCamera(deviceId).catch(() => {});
     });
 
-    document.getElementById('roulette-start').addEventListener('click', startRoulette);
-    document.getElementById('roulette-reset').addEventListener('click', resetRoulette);
-    document.getElementById('roulette-max-input').addEventListener('change', (event) => {
-      updateRouletteMax(event.target.value);
-    });
-    document.getElementById('roulette-max-input').addEventListener('blur', (event) => {
-      updateRouletteMax(event.target.value);
+    $('replayBtn').addEventListener('click', () => {
+      if (replayMode) showLiveVideo();
+      else showReplayVideo();
     });
 
-    window.addEventListener('storage', (event) => {
-      if (event.key === STORAGE_KEY) refreshEntriesFromStorage();
-    });
-
-    window.addEventListener('focus', refreshEntriesFromStorage);
-
-    let rankingChannel = null;
-    try {
-      rankingChannel = new BroadcastChannel('ranking-app');
-      rankingChannel.addEventListener('message', (event) => {
-        if (event.data && event.data.type === 'entries-updated') refreshEntriesFromStorage();
-      });
-    } catch (e) {
-      // Storage/focus events still keep the ranking in sync when BroadcastChannel is unavailable.
+    function setState(text, cls) { const s = $('state'); s.textContent = text; s.className = 'state' + (cls ? ' ' + cls : ''); }
+    function setMode(m) {
+      mode = m;
+      const btn = $('measureBtn');
+      btn.disabled = (m === 'arming');
+      if (m === 'online') { setState('計測中', 'online'); btn.textContent = '計測'; }
+      else if (m === 'arming') { setState('計測開始中…', 'arming'); btn.textContent = '開始中…'; }
+      else if (m === 'idle') { setState('接続済み(未開始)'); btn.textContent = '計測'; }
+      else { setState('未接続'); btn.textContent = '計測'; }
     }
 
-    window.addEventListener('ranking-store-ready', async (event) => {
-      rankingStore = event.detail;
-      setSyncStatus('connecting', 'ランキングを同期中');
+    // --- HID 受信処理 ---
+    function onInputReport(e) {
+      const data = new Uint8Array(e.data.buffer, e.data.byteOffset, e.data.byteLength);
+      if (data.every(b => b === 0xff)) return; // アイドル
+      const frames = scanFrames(data);
+      for (const f of frames) handleFrame(f);
+    }
 
-      try {
-        stopEntrySync = rankingStore.subscribe((remoteEntries) => {
-          entries = remoteEntries;
-          renderRanking();
-          renderEntryList();
-          setSyncStatus('online', 'リアルタイム同期中');
-        }, (error) => {
-          console.error('ランキングの同期に失敗しました', error);
-          setSyncStatus('error', '同期エラー');
-          showToast('ランキングを同期できませんでした');
-        });
-
-        try {
-          await importPendingLocalEntries();
-        } catch (migrationError) {
-          console.error('ローカルランキングの移行に失敗しました', migrationError);
-          showToast('旧ランキングの移行に失敗しました');
+    function handleFrame(f) {
+      if (f.command === BaseCmd.ERROR) {
+        const err = parseError(f.payload);
+      if (err && err.failedCommand === WittyCmd.SET_TEST_START) {
+          wantArm = false;
+          stopActiveRecording(false).catch(() => {});
+          setMode('idle');
+          setState('開始失敗: テスト名を確認 (code ' + err.errorCode + ')', 'err');
         }
-      } catch (error) {
-        console.error('Firebase の初期化に失敗しました', error);
-        setSyncStatus('error', '同期エラー');
-        showToast('Firebase の設定と接続を確認してください');
+        return;
+      }
+      if (f.command === WittyCmd.SET_TEST_START && f.isResponse) {
+        wantArm = false; armAttempts = 0;
+        setMode('online');
+        log('計測開始 受理(オンライン計測モード)');
+        return;
+      }
+      if (f.command === WittyCmd.EVENT_TEST_RESULTS) {
+        const ev = parseTestResultEvent(f.payload);
+        if (ev) onCrossing(ev);
+      }
+    }
+
+    // --- 横切り処理(witty-measure.html と同じ判定ロジック) ---
+    function onCrossing(ev) {
+      const last = currentRun[currentRun.length - 1];
+      if (last && last.tick === ev.tick && last.counter === ev.counter) return; // 重複
+      if (last && ev.tick < last.tick) currentRun = [];  // タイマー側で新しい走が始まった
+      currentRun.push(ev);
+      render();
+      if (currentRun.length === getFinishCrossingCount()) finishRunRecording();
+      log(`横切り#${currentRun.length} tick=${ev.tick}`);
+    }
+
+    // --- 表示 ---
+    function render() {
+      const finishCount = getFinishCrossingCount();
+      const big = $('bigTime');
+      const phase = $('phase');
+      const done = Math.min(currentRun.length, finishCount);
+      const finished = currentRun.length >= finishCount;
+
+      renderGates(finishCount, done);
+      renderLatestLap(finishCount);
+      renderLaps(finishCount);
+
+      if (currentRun.length === 0) {
+        big.className = 'waiting';
+        big.innerHTML = '--<span class="unit">秒</span>';
+        phase.className = '';
+        phase.textContent = (mode === 'online') ? 'スタート待ち' : '計測ボタンで開始';
+        return;
+      }
+
+      // タイムは witty-measure.html と同じ方式(tickの絶対秒をそのまま表示)。
+      // 走ごとのタイムリセットは、計測ボタンで計測開始コマンドを再送して行う。
+      if (finished) {
+        const official = currentRun[finishCount - 1].seconds;
+        big.className = 'final';
+        big.innerHTML = `${official.toFixed(2)}<span class="unit">秒</span>`;
+        phase.className = 'final';
+        phase.textContent = '確定タイム';
+      } else {
+        const latest = currentRun[currentRun.length - 1].seconds;
+        big.className = '';
+        big.innerHTML = `${latest.toFixed(2)}<span class="unit">秒</span>`;
+        phase.className = '';
+        phase.textContent = `計測中 ${done}/${finishCount}`;
+      }
+    }
+
+    function getLapSeconds(events, index) {
+      if (index <= 0) return events[0]?.seconds ?? null;
+      return Math.max(0, events[index].seconds - events[index - 1].seconds);
+    }
+
+    function renderLatestLap(finishCount) {
+      const events = currentRun.slice(0, finishCount);
+      const box = $('latestLap');
+      const label = $('latestLapLabel');
+      const value = $('latestLapTime');
+
+      if (!events.length) {
+        lastAnimatedLapCount = 0;
+        label.textContent = '直近ラップ';
+        value.innerHTML = '--<span class="unit">秒</span>';
+        box.classList.remove('flash');
+        return;
+      }
+
+      const index = events.length - 1;
+      const lapSeconds = getLapSeconds(events, index);
+      label.textContent = index === 0 ? '1回目タイム' : `直近ラップ #${index + 1}`;
+      value.innerHTML = `${lapSeconds.toFixed(2)}<span class="unit">秒</span>`;
+
+      if (events.length !== lastAnimatedLapCount) {
+        lastAnimatedLapCount = events.length;
+        box.classList.remove('flash');
+        void box.offsetWidth;
+        box.classList.add('flash');
+      }
+    }
+
+    function renderLaps(finishCount) {
+      const rows = $('lapRows');
+      const events = currentRun.slice(0, finishCount);
+      rows.innerHTML = '';
+
+      if (!events.length) {
+        const empty = document.createElement('div');
+        empty.className = 'lap-empty';
+        empty.textContent = '通過するとラップタイムが表示されます';
+        rows.appendChild(empty);
+        return;
+      }
+
+      events.forEach((event, index) => {
+        const lap = getLapSeconds(events, index);
+        const row = document.createElement('div');
+        row.className = 'lap-row' + (index === events.length - 1 ? ' latest' : '');
+
+        const number = document.createElement('span');
+        number.className = 'lap-number';
+        number.textContent = `#${index + 1}`;
+
+        const cumulative = document.createElement('span');
+        cumulative.className = 'lap-time';
+        cumulative.textContent = `${event.seconds.toFixed(2)} 秒`;
+
+        const interval = document.createElement('span');
+        interval.className = 'lap-time';
+        interval.textContent = `${lap.toFixed(2)} 秒`;
+
+        row.append(number, cumulative, interval);
+        rows.appendChild(row);
+      });
+      rows.scrollTop = rows.scrollHeight;
+    }
+
+    function renderGates(total, lit) {
+      const box = $('gates');
+      box.innerHTML = '';
+      for (let i = 0; i < total; i++) {
+        const g = document.createElement('div');
+        g.className = 'gate' + (i < lit ? ' lit' : '');
+        box.appendChild(g);
+      }
+    }
+
+    // --- 接続・開始の自動化(witty-measure.html と同じシーケンス) ---
+    async function attachDevice(dev) {
+      device = dev;
+      if (!device.opened) await device.open();
+      device.removeEventListener('inputreport', onInputReport);
+      device.addEventListener('inputreport', onInputReport);
+      log(`接続: ${device.productName || '(名称なし)'} PID=0x${device.productId.toString(16)}`);
+    }
+
+    async function sendStart() {
+      if (!device) return;
+      try {
+        const frame = buildTestStart($('testName').value);
+        await device.sendReport(0, frame);
+        log(`計測開始コマンド送信 (試行${armAttempts})`);
+      } catch (e) {
+        log('送信失敗: ' + e.message + '(再列挙中かもしれません)');
+      }
+    }
+
+    async function arm() {
+      wantArm = true; armAttempts = 1;
+      setMode('arming');
+      await startRunRecording();
+      if (TEST_CAMERA_MODE) {
+        wantArm = false;
+        setMode('online');
+        return;
+      }
+      await sendStart();
+    }
+
+    $('measureBtn').addEventListener('click', async () => {
+      if (mode === 'online') {
+        // 表示をクリアし、計測開始コマンドを再送してタイマーのタイムをリセット
+        currentRun = []; render();
+        await arm();
+        return;
+      }
+      if (mode === 'idle') { await arm(); return; }
+      // 未接続 → 接続してそのまま計測開始
+      try {
+        const devs = await navigator.hid.requestDevice({ filters: [{ vendorId: 0x16d0 }] });
+        if (!devs.length) return;
+        await attachDevice(devs[0]);
+        await arm();
+      } catch (e) { log('接続エラー: ' + e.message); setState('接続失敗', 'err'); }
+    });
+
+    // 再列挙対応: 切断されても開始意思があれば待ち受け
+    navigator.hid && navigator.hid.addEventListener('disconnect', (e) => {
+      if (device && e.device === device) {
+        device = null;
+        if (wantArm || mode === 'online') {
+          setState('再接続待ち…', 'arming');
+          log('切断 — 再接続を待機します');
+        } else { setMode('disconnected'); }
       }
     });
 
-    window.addEventListener('ranking-store-unconfigured', () => {
-      setSyncStatus('local', 'ローカル保存（Firebase未設定）');
+    navigator.hid && navigator.hid.addEventListener('connect', async (e) => {
+      if (device || e.device.vendorId !== 0x16d0) return;
+      if (!wantArm && mode !== 'online') return;
+      log('タイマー再出現 — 自動再接続します');
+      try {
+        await attachDevice(e.device);
+        if (wantArm && armAttempts < MAX_ARM_ATTEMPTS) {
+          armAttempts++;
+          setMode('arming');
+          setTimeout(sendStart, 500); // 起動直後は少し待ってから
+        } else if (wantArm) {
+          stopActiveRecording(false).catch(() => {});
+          wantArm = false; setState('開始できませんでした(再試行上限)', 'err'); setMode('idle');
+        } else {
+          setMode('online');
+        }
+      } catch (err) { log('自動再接続失敗: ' + err.message); }
     });
 
-    window.addEventListener('ranking-store-error', (event) => {
-      console.error('Firebase への接続に失敗しました', event.detail);
-      setSyncStatus('error', 'Firebase接続エラー');
+    $('finishCount').addEventListener('input', render);
+    $('modeSelect').addEventListener('change', () => {
+      const preset = MODES[$('modeSelect').value];
+      if (!preset) return;
+      $('testName').value = preset.testName;
+      $('finishCount').value = preset.finishCount;
+      render();
+      log(`測定モード変更: ${$('modeSelect').value === 'pro-agility-5' ? '5m-5m' : '2.5m-2.5m'} (テスト名=${preset.testName}, 完了回数=${preset.finishCount})`);
     });
 
-    window.addEventListener('beforeunload', () => {
-      if (stopEntrySync) stopEntrySync();
-    });
+    // 実機なしで表示を確認するための検証用フック(本番動作には影響しない)
+    window.__simulateCrossing = (seconds) => {
+      const counter = (currentRun[currentRun.length - 1]?.counter ?? 0) + 1;
+      onCrossing({ tick: Math.round(seconds * 25000), counter, seconds });
+    };
 
-    setTimeout(() => {
-      if (syncMode === 'connecting' && !rankingStore) {
-        setSyncStatus('error', 'Firebase接続エラー');
-      }
-    }, 10000);
+    if (TEST_CAMERA_MODE) {
+      let testSeconds = 0;
+      $('testCrossingBtn').hidden = false;
+      $('testCrossingBtn').addEventListener('click', () => {
+        testSeconds += 1.25;
+        window.__simulateCrossing(testSeconds);
+      });
+    }
 
-    applyTheme(theme);
-    renderRanking();
-    renderRoulette();
-    renderEntryList();
+    setMode(TEST_CAMERA_MODE ? 'online' : 'disconnected');
+    render();
+    setCameraVisible(cameraVisible, { persist: false, restart: false });
+    if (cameraVisible) startCamera(localStorage.getItem(CAMERA_STORAGE_KEY) || '').catch(() => {});
   </script>
-
 </body>
 
 </html>

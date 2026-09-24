@@ -1,5 +1,5 @@
 // スピード王計測アプリ (Electron メインプロセス)
-// witty-display.html を単体ウィンドウで表示し、WebHID で Witty タイマーと通信する。
+// index.html(計測画面) を単体ウィンドウで表示し、WebHID で Witty タイマーと通信する。
 
 const { app, BrowserWindow, session } = require('electron');
 const path = require('path');
@@ -43,7 +43,7 @@ function createWindow() {
     autoHideMenuBar: true,
     backgroundColor: '#07090c',
   });
-  win.loadFile(path.join(__dirname, '..', 'witty-display.html'));
+  win.loadFile(path.join(__dirname, '..', 'index.html'));
 }
 
 app.whenReady().then(() => {

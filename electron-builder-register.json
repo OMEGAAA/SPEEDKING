@@ -4,7 +4,7 @@
   "files": [
     "electron/**",
     "witty-display-register.html",
-    "index.html",
+    "ranking.html",
     "firebase-config.js",
     "firebase-ranking.js",
     "witty-protocol.js"

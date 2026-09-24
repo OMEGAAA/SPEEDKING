@@ -152,7 +152,7 @@
     </div>
     <p class="hint">
       受信した横切りを順番に表示し、指定した完了回数に達すると「タイム」欄に公式タイムが自動で入ります。手直しも可能です。名前を入れて登録してください。
-      登録後は <a id="rankLink" href="index.html" target="_blank">ランキング表</a> を再読み込みすると反映されます。
+      登録後は <a id="rankLink" href="ranking.html" target="_blank">ランキング表</a> を再読み込みすると反映されます。
     </p>
     <ul class="recent" id="recent"></ul>
   </div>
@@ -167,7 +167,7 @@
       buildTestStart, scanFrames, parseError, parseTestResultEvent, BaseCmd, WittyCmd,
     } from './witty-protocol.js';
 
-    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 index.html と共有
+    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 ranking.html と共有
     const $ = (id) => document.getElementById(id);
 
     if (!('hid' in navigator)) { $('unsupported').style.display = 'block'; $('connect').disabled = true; }

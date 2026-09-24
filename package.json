@@ -16,7 +16,7 @@
     "productName": "witty-timer-display",
     "files": [
       "electron/**",
-      "witty-display.html",
+      "index.html",
       "witty-protocol.js"
     ],
     "win": {

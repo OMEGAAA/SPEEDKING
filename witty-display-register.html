@@ -617,7 +617,7 @@
 
     if (!('hid' in navigator)) { $('unsupported').style.display = 'block'; }
 
-    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 index.html と共有
+    const STORAGE_KEY = 'ranking-app-entries'; // ランキング表 ranking.html と共有
     let rankingStore = null;
     let stopRankingSync = null;
     let cloudEntries = [];
@@ -685,7 +685,7 @@
       }
     }
 
-    // --- 横切り処理(witty-display.html と同じ判定ロジック) ---
+    // --- 横切り処理(index.html(計測画面) と同じ判定ロジック) ---
     function onCrossing(ev) {
       const last = currentRun[currentRun.length - 1];
       if (last && last.tick === ev.tick && last.counter === ev.counter) return; // 重複
@@ -716,7 +716,7 @@
         return;
       }
 
-      // タイムは witty-display.html と同じ方式(tickの絶対秒をそのまま表示)。
+      // タイムは index.html(計測画面) と同じ方式(tickの絶対秒をそのまま表示)。
       // 走ごとのタイムリセットは、計測ボタンで計測開始コマンドを再送して行う。
       if (finished) {
         const official = currentRun[finishCount - 1].seconds;
@@ -905,7 +905,7 @@
     // 手入力でもタイムが入ればいつでも登録可
     $('scoreInput').addEventListener('input', updateRegisterEnabled);
 
-    $('openRanking').addEventListener('click', () => { window.open('index.html'); });
+    $('openRanking').addEventListener('click', () => { window.open('ranking.html'); });
 
     window.addEventListener('ranking-store-ready', async (event) => {
       rankingStore = event.detail;
@@ -941,7 +941,7 @@
       if (stopRankingSync) stopRankingSync();
     });
 
-    // --- 接続・開始の自動化(witty-display.html と同じシーケンス) ---
+    // --- 接続・開始の自動化(index.html(計測画面) と同じシーケンス) ---
     async function attachDevice(dev) {
       device = dev;
       if (!device.opened) await device.open();

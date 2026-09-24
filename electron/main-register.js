@@ -40,11 +40,11 @@ function createWindow() {
 app.whenReady().then(() => {
   setupWebHid(session.defaultSession);
 
-  // 同梱の index.html(ランキング表)にある「計測画面へ」リンクは
-  // witty-display.html を指すが、このアプリには同梱していないため計測ページへ差し替える
+  // 同梱の ranking.html(ランキング表)にある「計測画面へ」リンクは
+  // index.html(計測画面) を指すが、このアプリには同梱していないため計測ページへ差し替える
   app.on('web-contents-created', (_event, contents) => {
     contents.on('will-navigate', (event, url) => {
-      if (url.endsWith('witty-display.html')) {
+      if (url.endsWith('index.html')) {
         event.preventDefault();
         contents.loadFile(path.join(__dirname, '..', 'witty-display-register.html'));
       }
