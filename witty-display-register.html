@@ -520,7 +520,6 @@
       if (last && ev.tick < last.tick) currentRun = [];  // タイマー側で新しい走が始まった
       currentRun.push(ev);
       render();
-      startLiveClock();
       log(`横切り#${currentRun.length} tick=${ev.tick}`);
     }
 
@@ -535,7 +534,6 @@
       renderGates(finishCount, done);
       renderLatestLap(finishCount);
       renderLaps(finishCount);
-      if (currentRun.length === 0 || finished) stopLiveClock();
 
       if (currentRun.length === 0) {
         big.className = 'waiting';
@@ -563,38 +561,6 @@
         phase.textContent = `計測中 ${done}/${finishCount}`;
         setOfficialScore(null, done, finishCount);
       }
-    }
-
-    // --- リアルタイム表示 ---
-    // Witty は通過の瞬間しかタイムを送らないため、通過と通過の間は PC の時計で経過時間を足して表示する。
-    // 次の通過イベントが届いた時点で Witty の正式な値に差し替わる(表示用の目安で、記録には使わない)。
-    const LAP_HOLD_MS = 600; // 通過直後は確定したラップをこの時間だけ見せてからカウントアップに切り替える
-    let liveAnchor = null;   // { seconds: 最後の通過のtick秒, at: その受信時刻(performance.now) }
-    let liveFrame = 0;
-
-    function startLiveClock() {
-      cancelAnimationFrame(liveFrame);
-      const last = currentRun[currentRun.length - 1];
-      if (!last || currentRun.length >= getFinishCrossingCount()) { liveAnchor = null; return; }
-      liveAnchor = { seconds: last.seconds, at: performance.now() };
-      liveFrame = requestAnimationFrame(drawLiveClock);
-    }
-
-    function stopLiveClock() {
-      cancelAnimationFrame(liveFrame);
-      liveAnchor = null;
-    }
-
-    function drawLiveClock() {
-      if (!liveAnchor) return;
-      const sinceCrossing = performance.now() - liveAnchor.at;
-      const elapsed = sinceCrossing / 1000;
-      $('bigTime').innerHTML = `${(liveAnchor.seconds + elapsed).toFixed(2)}<span class="unit">秒</span>`;
-      if (sinceCrossing >= LAP_HOLD_MS) {
-        $('latestLapLabel').textContent = `ラップ #${currentRun.length + 1} 計測中`;
-        $('latestLapTime').innerHTML = `${elapsed.toFixed(2)}<span class="unit">秒</span>`;
-      }
-      liveFrame = requestAnimationFrame(drawLiveClock);
     }
 
     function getLapSeconds(events, index) {
