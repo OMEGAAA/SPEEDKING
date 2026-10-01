@@ -368,6 +368,7 @@
         <label>モード<select id="modeSelect">
           <option value="pro-agility-2_5" selected>2.5m-2.5m</option>
           <option value="pro-agility-5">5m-5m</option>
+          <option value="sprint-30">30mスプリント</option>
         </select></label>
         <label>テスト名<input type="text" id="testName" value="Proagility2"></label>
         <label>完了回数<input type="number" id="finishCount" value="4" min="1" max="20" step="1"></label>
@@ -437,6 +438,7 @@
     const MODES = {
       'pro-agility-2_5': { testName: 'Proagility2', finishCount: 4 },
       'pro-agility-5': { testName: 'Proagility', finishCount: 2 },
+      'sprint-30': { testName: '30msprint', finishCount: 1 }, // スタート→ゴールのタイムが1件だけ届く
     };
     const DEFAULT_FINISH_CROSSING_COUNT = MODES['pro-agility-2_5'].finishCount;
     const CAMERA_STORAGE_KEY = 'witty-display-camera-id';
@@ -988,7 +990,7 @@
       $('testName').value = preset.testName;
       $('finishCount').value = preset.finishCount;
       render();
-      log(`測定モード変更: ${$('modeSelect').value === 'pro-agility-5' ? '5m-5m' : '2.5m-2.5m'} (テスト名=${preset.testName}, 完了回数=${preset.finishCount})`);
+      log(`測定モード変更: ${$('modeSelect').selectedOptions[0].textContent} (テスト名=${preset.testName}, 完了回数=${preset.finishCount})`);
     });
 
     // 実機なしで表示を確認するための検証用フック(本番動作には影響しない)
